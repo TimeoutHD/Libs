@@ -1,4 +1,4 @@
-package src.de.timeout.utils;
+package de.timeout.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
@@ -17,8 +18,6 @@ import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 
 import com.google.common.collect.Lists;
-
-import net.md_5.bungee.api.ChatColor;
 
 public class ItemStackAPI {
 	
@@ -34,7 +33,7 @@ public class ItemStackAPI {
 
 	public static ItemStack createItemStack(Materials material, short subid, int amount, String name) {
 		ItemStack item = new ItemStack(material.material(), amount, subid);
-		if(name != null && material != Materials.AIR) {
+		if	(name != null && material != Materials.AIR) {
 			ItemMeta meta = item.getItemMeta();
 			meta.setDisplayName(name);
 			item.setItemMeta(meta);
@@ -113,4 +112,3 @@ public class ItemStackAPI {
 		return null;
 	}
 }
-
