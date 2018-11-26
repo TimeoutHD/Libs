@@ -114,6 +114,9 @@ public enum Skull {
 						URLConnection connection = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + trimmedUUID + "?unsigned=false").openConnection();
 						connection.setUseCaches(false);
 						connection.setDefaultUseCaches(false);
+						connection.setDoInput(true);
+						connection.setDoOutput(true);
+						connection.addRequestProperty("Content-Type", "application/json");
 						connection.addRequestProperty("User-Agent", "Mozilla/5.0");
 						connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
 						connection.addRequestProperty("Pragma", "no-cache");
