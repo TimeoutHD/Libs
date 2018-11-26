@@ -111,8 +111,7 @@ public enum Skull {
 					
 					JsonObject obj = sessionObjects.get(uuid);
 					if(obj == null) {
-						URL url = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + trimmedUUID + "?unsigned=false");
-						URLConnection connection = url.openConnection();
+						URLConnection connection = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + trimmedUUID + "?unsigned=false").openConnection();
 						connection.setUseCaches(false);
 						connection.setDefaultUseCaches(false);
 						connection.addRequestProperty("User-Agent", "Mozilla/5.0");
