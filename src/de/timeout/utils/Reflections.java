@@ -119,4 +119,14 @@ public class Reflections {
 		}
 		 return new GameProfile(player.getUniqueId(), player.getName());
 	}
+	
+	public static <T> Field getField(Class<?> target, String name, Class<T> fieldtype) {
+		for(Field field : target.getDeclaredFields()) {
+			if((name == null || field.getName().equals(name)) && fieldtype.isAssignableFrom(field.getType())) {
+				field.setAccessible(true);
+				return field;
+			}
+		}
+		return null;
+	}
 }

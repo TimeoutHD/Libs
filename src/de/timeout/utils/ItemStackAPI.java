@@ -57,13 +57,18 @@ public class ItemStackAPI {
 	}
 	
 	public static ItemStack readItemStack(String name, ConfigurationSection section, List<String> lore) {
-		ItemStack item;
+		ItemStack item = null;
 		Materials material = Materials.valueOf(section.getString("material"));
 		short subID = (short) section.getInt("subid");
 		
 		if((material != Materials.SKULL_ITEM && subID != 3) || name == null) 
 			item = createItemStack(material, subID, section.getInt("amount") > 0 ? section.getInt("amount") : 1, ChatColor.translateAlternateColorCodes('&', section.getString("name")));
-		else item = Skull.getSkull(name, ChatColor.translateAlternateColorCodes('&', section.getString("name")));
+		else
+			try {
+				item = Skull.getSkull(name, ChatColor.translateAlternateColorCodes('&', section.getString("name")));
+			} catch (IllegalAccessException | IOException e) {
+				item = ItemStackAPI.createItemStack(Materials.SKULL_ITEM, subID, section.getInt("amount") > 0 ? section.getInt("amount") : 1, ChatColor.translateAlternateColorCodes('&', section.getString("name")));
+			}
 		
 		if(lore != null && !lore.isEmpty()) {
 			for(int i = 0; i < lore.size(); i++) lore.set(i, ChatColor.translateAlternateColorCodes('&', lore.get(i)));

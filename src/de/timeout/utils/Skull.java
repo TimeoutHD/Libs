@@ -3,15 +3,13 @@ package de.timeout.utils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
 
 import org.apache.commons.codec.binary.Base64;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -61,6 +59,7 @@ public enum Skull {
 	
     private static final Base64 base64 = new Base64();
     private static final String TEXTURES = "textures";
+    private static final Map<UUID, JsonObject> sessionObjects = new HashMap<UUID, JsonObject>();
     
     private String id;
 
@@ -84,25 +83,22 @@ public enum Skull {
         return head;
     }
     
-	public static ItemStack getSkull(GameProfile profile, String display) {
-		try {
-			Property property = profile.getProperties().get(TEXTURES).iterator().next();
-			String value = property.getValue();
-			String base64decoded = new String(Base64.decodeBase64(value));
-			JsonObject json = new JsonParser().parse(base64decoded).getAsJsonObject();
-			String url = json.get(TEXTURES).getAsJsonObject().get("SKIN").getAsJsonObject().get("url").getAsString();
-			ItemStack skull = Skull.getCustomSkull(url);
+	public static ItemStack getSkull(GameProfile profile, String display) throws IllegalAccessException {
+		Property property = profile.getProperties().get(TEXTURES).iterator().next();
+		String value = property.getValue();
+		String base64decoded = new String(Base64.decodeBase64(value));
+		JsonObject json = new JsonParser().parse(base64decoded).getAsJsonObject();
+		String url = json.get(TEXTURES).getAsJsonObject().get("SKIN").getAsJsonObject().get("url").getAsString();
+		ItemStack skull = Skull.getCustomSkull(url);
 			
-			ItemMeta skullMeta = skull.getItemMeta();
-			skullMeta.setDisplayName(display);
-			skull.setItemMeta(skullMeta);
-			return skull;
-		} catch (IllegalAccessException e) {}	
-		return ItemStackAPI.createItemStack(Materials.SKULL_ITEM, (short) 3, 1, "");
+		ItemMeta skullMeta = skull.getItemMeta();
+		skullMeta.setDisplayName(display);
+		skull.setItemMeta(skullMeta);
+		return skull;
 	}
 	
 	@SuppressWarnings("deprecation")
-	public static ItemStack getSkull(String name, String display) {
+	public static ItemStack getSkull(String name, String display) throws IOException, IllegalAccessException {
 		GameProfile profile = Bukkit.getServer().getOfflinePlayer(name).isOnline() ? Reflections.getGameProfile(Bukkit.getServer().getPlayer(name)) : null;
 		if(profile == null) {
 			try(InputStream in = new URL("https://api.mojang.com/users/profiles/minecraft/" + name.toLowerCase()).openStream()) {
@@ -112,35 +108,34 @@ public enum Skull {
 					UUID uuid = fromTrimmed(trimmedUUID);
 					profile = new GameProfile(uuid, name);
 					
-					try(InputStream session = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + trimmedUUID + "?unsigned=false").openStream()) {
-						JsonObject obj = new JsonParser().parse(new InputStreamReader(session)).getAsJsonObject().get("properties").getAsJsonArray().get(0).getAsJsonObject();
-						String value = obj.get("value").getAsString();
-						String signature = obj.get("signature").getAsString();
-						
-						profile.getProperties().put(TEXTURES, new Property(TEXTURES, value, signature));
+					JsonObject obj = sessionObjects.get(uuid);
+					if(obj == null) {
+						try(InputStream session = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + trimmedUUID + "?unsigned=false").openStream()) {
+							obj = new JsonParser().parse(new InputStreamReader(session)).getAsJsonObject().get("properties").getAsJsonArray().get(0).getAsJsonObject();
+							sessionObjects.remove(uuid);
+							sessionObjects.put(uuid, obj);
+						}
 					}
+					String value = obj.get("value").getAsString();
+					String signature = obj.get("signature").getAsString();
+					
+					profile.getProperties().put(TEXTURES, new Property(TEXTURES, value, signature));
 				}
-			} catch (IOException e) {
-				Bukkit.getLogger().log(Level.SEVERE, "Could not connect to MojangAPI & SessionServers", e);
 			}
 		}
-		if(profile != null)return getSkull(profile, display);
-		throw new NullPointerException();
+		return getSkull(profile, display);
 	}
 	
-	public static ItemStack loadSkullFromGameprofileValue(String display, String value) {
-		try {
-			String base64decoded = new String(Base64.decodeBase64(value));
-			JsonObject json = new JsonParser().parse(base64decoded).getAsJsonObject();
-			String url = json.get(TEXTURES).getAsJsonObject().get("SKIN").getAsJsonObject().get("url").getAsString();
-			ItemStack skull = Skull.getCustomSkull(url);
+	public static ItemStack loadSkullFromGameprofileValue(String display, String value) throws IllegalAccessException {
+		String base64decoded = new String(Base64.decodeBase64(value));
+		JsonObject json = new JsonParser().parse(base64decoded).getAsJsonObject();
+		String url = json.get(TEXTURES).getAsJsonObject().get("SKIN").getAsJsonObject().get("url").getAsString();
+		ItemStack skull = Skull.getCustomSkull(url);
 			
-			ItemMeta meta = skull.getItemMeta();
-			meta.setDisplayName(display);
-			skull.setItemMeta(meta);
-			return skull;
-		} catch(IllegalAccessException e) {}
-		return ItemStackAPI.createItemStack(Materials.SKULL_ITEM, (short) 3, 1, display);
+		ItemMeta meta = skull.getItemMeta();
+		meta.setDisplayName(display);
+		skull.setItemMeta(meta);
+		return skull;
 	}
 	
 	private static UUID fromTrimmed(String trimmedUUID) {
@@ -151,7 +146,7 @@ public enum Skull {
 			    builder.insert(16, "-");
 			    builder.insert(12, "-");
 			    builder.insert(8, "-");
-			} catch (StringIndexOutOfBoundsException e){}
+			} catch (StringIndexOutOfBoundsException e) {}
 			return UUID.fromString(builder.toString());
 		}
 		return null;
@@ -159,40 +154,5 @@ public enum Skull {
     
     public String getId() {
         return id;
-    }
-    
-    public static class Reflections {
-    	
-    	public static Class<?> getCraftBukkitClass(String clazz) {
-    		try {
-    			String version = Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".";
-    			String name = "org.bukkit.craftbukkit." + version + clazz;
-    			return Class.forName(name);
-    		} catch (ClassNotFoundException e) {
-    			Bukkit.getLogger().log(Level.WARNING, "Could not find CraftBukkit-Class " + clazz, e);
-    		}
-    		return null;
-    	}
-    	
-    	public static <T> Field getField(Class<?> target, String name, Class<T> fieldtype) {
-    		for(Field field : target.getDeclaredFields()) {
-    			if((name == null || field.getName().equals(name)) && fieldtype.isAssignableFrom(field.getType())) {
-    				field.setAccessible(true);
-    				return field;
-    			}
-    		}
-    		return null;
-    	}
-    	
-    	public static GameProfile getGameProfile(Player player) {
-   		 	try {
-   		 		Class<?> craftplayerClass = getCraftBukkitClass("entity.CraftPlayer");
-   		 		return craftplayerClass != null ? (GameProfile) craftplayerClass.getMethod("getProfile").invoke(player) : null;
-   		 	} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-   				| SecurityException e) {
-   		 		Bukkit.getLogger().log(Level.INFO, "Could not get GameProfile from Player " + player.getName(), e);
-   		 	}
-   		 	return new GameProfile(player.getUniqueId(), player.getName());
-    	}
     }
 }
