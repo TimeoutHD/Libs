@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -110,7 +111,15 @@ public enum Skull {
 					
 					JsonObject obj = sessionObjects.get(uuid);
 					if(obj == null) {
-						try(InputStream session = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + trimmedUUID + "?unsigned=false").openStream()) {
+						URL url = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + trimmedUUID + "?unsigned=false");
+						URLConnection connection = url.openConnection();
+						connection.setUseCaches(false);
+						connection.setDefaultUseCaches(false);
+						connection.addRequestProperty("User-Agent", "Mozilla/5.0");
+						connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
+						connection.addRequestProperty("Pragma", "no-cache");
+						
+						try(InputStream session = connection.getInputStream()) {
 							obj = new JsonParser().parse(new InputStreamReader(session)).getAsJsonObject().get("properties").getAsJsonArray().get(0).getAsJsonObject();
 							sessionObjects.remove(uuid);
 							sessionObjects.put(uuid, obj);
