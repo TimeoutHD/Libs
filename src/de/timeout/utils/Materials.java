@@ -330,7 +330,7 @@ public enum Materials {
 	REDSTONE("LEGACY_REDSTONE", "REDSTONE"),
 	SNOW_BALL("LEGACY_SNOW_BALL", "SNOW_BALL"),
 	BOAT("LEGACY_BOAT", "BOAT"),
-	LEATHER("LEGACY_LEATHER", "LEAHTER"),
+	LEATHER("LEGACY_LEATHER", "LEATHER"),
 	MILK_BUCKET("LEGACY_MILK_BUCKET", "MILK_BUCKET"),
 	CLAY_BRICK("LEGACY_CLAY_BRICK", "CLAY_BRICK"),
 	CLAY_BALL("LEGACY_CLAY_BALL", "CLAY_BALL"),
@@ -471,10 +471,10 @@ public enum Materials {
 	
 	public Material material() {
 		try {
-			return Material.valueOf(newEnum);
+			return Material.valueOf(Material.class, newEnum);
 		} catch(IllegalArgumentException e) {
 			//try Old Material
-			return Material.valueOf(oldEnum);
+			return Material.valueOf(Material.class, oldEnum);
 		}
 	}
 }
