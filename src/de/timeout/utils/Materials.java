@@ -2,6 +2,9 @@ package de.timeout.utils;
 
 import org.bukkit.Material;
 
+/**
+ * Die Methode muss überarbeitet werden. Vervollstellung auf 1.8 <b>bis</b> Latest
+ */
 public enum Materials {
 
 	AIR("LEGACY_AIR", "AIR"),
