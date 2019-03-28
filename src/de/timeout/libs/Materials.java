@@ -1,4 +1,4 @@
-package de.timeout.utils;
+package de.timeout.libs;
 
 import org.bukkit.Material;
 

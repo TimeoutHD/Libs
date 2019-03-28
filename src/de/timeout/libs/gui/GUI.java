@@ -1,4 +1,4 @@
-package de.timeout.utils.gui;
+package de.timeout.libs.gui;
 
 import java.util.HashMap;
 import java.util.function.Consumer;
@@ -19,8 +19,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import de.timeout.utils.ItemStackAPI;
-import de.timeout.utils.Materials;
+import de.timeout.libs.ItemStackAPI;
+import de.timeout.libs.Materials;
 
 public class GUI implements Listener {
 	

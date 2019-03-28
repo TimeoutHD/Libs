@@ -1,4 +1,4 @@
-package de.timeout.utils;
+package de.timeout.libs;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -11,23 +11,23 @@ import org.bukkit.entity.Player;
 
 import com.mojang.authlib.GameProfile;
 
-public class Reflections {
+public final class Reflections {
 		
 	private static final Field modifiers = getField(Field.class, "modifiers");
 	
 	private Reflections() {}
 
 	public static Field getField(Class<?> clazz, String name) {
-		try {
-			Field field = clazz.getDeclaredField(name);
-		    field.setAccessible(true);
-		      
-		    if (Modifier.isFinal(field.getModifiers()))modifiers.set(field, field.getModifiers() & ~Modifier.FINAL);
-		    return field;
-		} catch (Exception e) {
-			Bukkit.getLogger().log(Level.WARNING, "Could not find Field " + name + " in Class " + clazz.getName(), e);
-		}
-	return null;
+			try {
+				Field field = clazz.getDeclaredField(name);
+			    field.setAccessible(true);
+			      
+			    if (Modifier.isFinal(field.getModifiers()))modifiers.set(field, field.getModifiers() & ~Modifier.FINAL);
+			    return field;
+			} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+				Bukkit.getLogger().log(Level.SEVERE, "Cannot get Field " + name + " in Class " + clazz.getName(), e);
+			}
+		return null;
 	}
 	
 	public static Field getField(Object obj, String name) {
@@ -88,12 +88,12 @@ public class Reflections {
 		return null;
 	}
 	
-	public static Object getEntityPlayer(Player player) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+	public static Object getEntityPlayer(Player player) throws ReflectiveOperationException {
 		Method getHandle = player.getClass().getMethod("getHandle");
 		return getHandle.invoke(player);
 	}
 	
-	public static Object getPlayerConnection(Player player) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
+	public static Object getPlayerConnection(Player player) throws ReflectiveOperationException {
 		Object nmsp = getEntityPlayer(player);
 		Field con = nmsp.getClass().getField("playerConnection");
 		return con.get(nmsp);

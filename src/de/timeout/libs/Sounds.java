@@ -1,4 +1,4 @@
-package de.timeout.utils;
+package de.timeout.libs;
 
 import org.bukkit.Sound;
 
@@ -200,21 +200,18 @@ public enum Sounds {
 
     private String pre19sound;
     private String post19sound;
-    private Sound resolvedSound = null;
 
     Sounds(String pre19sound, String post19sound) {
         this.pre19sound = pre19sound;
         this.post19sound = post19sound;
     }
 
-    public Sound bukkitSound() {
-        if (resolvedSound != null) return resolvedSound;
-        
+    public Sound bukkitSound() {        
         try {
-            return resolvedSound = Sound.valueOf(post19sound);
+            return Sound.valueOf(post19sound);
         } catch (IllegalArgumentException e) {
             //Try 1.8 sound
-            return resolvedSound = Sound.valueOf(pre19sound);
+            return Sound.valueOf(pre19sound);
         }
     }
 }

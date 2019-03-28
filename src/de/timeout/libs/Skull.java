@@ -1,4 +1,4 @@
-package de.timeout.utils;
+package de.timeout.libs;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,8 +6,10 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 import org.apache.commons.codec.binary.Base64;
 import org.bukkit.Bukkit;
@@ -85,55 +87,62 @@ public enum Skull {
     }
     
 	public static ItemStack getSkull(GameProfile profile, String display) throws IllegalAccessException {
-		Property property = profile.getProperties().get(TEXTURES).iterator().next();
-		String value = property.getValue();
-		String base64decoded = new String(Base64.decodeBase64(value));
-		JsonObject json = new JsonParser().parse(base64decoded).getAsJsonObject();
-		String url = json.get(TEXTURES).getAsJsonObject().get("SKIN").getAsJsonObject().get("url").getAsString();
-		ItemStack skull = Skull.getCustomSkull(url);
-			
-		ItemMeta skullMeta = skull.getItemMeta();
-		skullMeta.setDisplayName(display);
-		skull.setItemMeta(skullMeta);
+		ItemStack skull = new ItemStack(Materials.SKULL_ITEM.material(), 1, (short) 3);
+		if(profile != null) {
+			Property property = profile.getProperties().get(TEXTURES).iterator().next();
+			String value = property.getValue();
+			String base64decoded = new String(Base64.decodeBase64(value));
+			JsonObject json = new JsonParser().parse(base64decoded).getAsJsonObject();
+			String url = json.get(TEXTURES).getAsJsonObject().get("SKIN").getAsJsonObject().get("url").getAsString();
+			skull = Skull.getCustomSkull(url);
+		}
+		
+		if(display != null && display.isEmpty()) {
+			ItemMeta skullMeta = skull.getItemMeta();
+			skullMeta.setDisplayName(display);
+			skull.setItemMeta(skullMeta);
+		}
+
 		return skull;
 	}
 	
 	@SuppressWarnings("deprecation")
-	public static ItemStack getSkull(String name, String display) throws IOException, IllegalAccessException {
+	public static ItemStack getSkull(String name, String display) throws IllegalAccessException {
 		GameProfile profile = Bukkit.getServer().getOfflinePlayer(name).isOnline() ? Reflections.getGameProfile(Bukkit.getServer().getPlayer(name)) : null;
 		if(profile == null) {
-			try(InputStream in = new URL("https://api.mojang.com/users/profiles/minecraft/" + name.toLowerCase()).openStream()) {
-				InputStreamReader reader = new InputStreamReader(in);
-				if(reader != null) {
-					String trimmedUUID = new JsonParser().parse(reader).getAsJsonObject().get("id").getAsString();
-					UUID uuid = fromTrimmed(trimmedUUID);
-					profile = new GameProfile(uuid, name);
+			try(InputStream in = new URL("https://api.mojang.com/users/profiles/minecraft/" + name.toLowerCase(Locale.getDefault())).openStream();
+					InputStreamReader reader = new InputStreamReader(in)) {
+				String trimmedUUID = new JsonParser().parse(reader).getAsJsonObject().get("id").getAsString();
+				UUID uuid = fromTrimmed(trimmedUUID);
+				profile = new GameProfile(uuid, name);
+				
+				JsonObject obj = sessionObjects.get(uuid);
+				if(obj == null) {
+					URLConnection connection = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + trimmedUUID + "?unsigned=false").openConnection();
+					connection.setUseCaches(false);
+					connection.setDefaultUseCaches(false);
+					connection.setDoInput(true);
+					connection.setDoOutput(true);
+					connection.addRequestProperty("Content-Type", "application/json");
+					connection.addRequestProperty("User-Agent", "Mozilla/5.0");
+					connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
+					connection.addRequestProperty("Pragma", "no-cache");
 					
-					JsonObject obj = sessionObjects.get(uuid);
-					if(obj == null) {
-						URLConnection connection = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + trimmedUUID + "?unsigned=false").openConnection();
-						connection.setUseCaches(false);
-						connection.setDefaultUseCaches(false);
-						connection.setDoInput(true);
-						connection.setDoOutput(true);
-						connection.addRequestProperty("Content-Type", "application/json");
-						connection.addRequestProperty("User-Agent", "Mozilla/5.0");
-						connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
-						connection.addRequestProperty("Pragma", "no-cache");
-						
-						try(InputStream session = connection.getInputStream()) {
-							obj = new JsonParser().parse(new InputStreamReader(session)).getAsJsonObject().get("properties").getAsJsonArray().get(0).getAsJsonObject();
-							sessionObjects.remove(uuid);
-							sessionObjects.put(uuid, obj);
-						}
+					try(InputStream session = connection.getInputStream()) {
+						obj = new JsonParser().parse(new InputStreamReader(session)).getAsJsonObject().get("properties").getAsJsonArray().get(0).getAsJsonObject();
+						sessionObjects.remove(uuid);
+						sessionObjects.put(uuid, obj);
 					}
-					String value = obj.get("value").getAsString();
-					String signature = obj.get("signature").getAsString();
-					
-					profile.getProperties().put(TEXTURES, new Property(TEXTURES, value, signature));
 				}
+				String value = obj.get("value").getAsString();
+				String signature = obj.get("signature").getAsString();
+				
+				profile.getProperties().put(TEXTURES, new Property(TEXTURES, value, signature));
+			} catch(IOException e) {
+				Bukkit.getLogger().log(Level.SEVERE, "Could not connect to SessionServers", e);
 			}
 		}
+		
 		return getSkull(profile, display);
 	}
 	
@@ -152,12 +161,10 @@ public enum Skull {
 	private static UUID fromTrimmed(String trimmedUUID) {
 		if(trimmedUUID != null) {
 			StringBuilder builder = new StringBuilder(trimmedUUID.trim());
-			try {
-			    builder.insert(20, "-");
-			    builder.insert(16, "-");
-			    builder.insert(12, "-");
-			    builder.insert(8, "-");
-			} catch (StringIndexOutOfBoundsException e) {}
+			builder.insert(20, "-");
+			builder.insert(16, "-");
+			builder.insert(12, "-");
+			builder.insert(8, "-");
 			return UUID.fromString(builder.toString());
 		}
 		return null;
