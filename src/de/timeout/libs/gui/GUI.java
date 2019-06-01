@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
@@ -19,86 +19,30 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import de.timeout.libs.ItemStackAPI;
-import de.timeout.libs.Materials;
+import de.timeout.libs.items.ItemStackAPI;
 
 public class GUI implements Listener {
 	
-	private static final ItemStack n = ItemStackAPI.createItemStack(Materials.STAINED_GLASS_PANE, (short) 7, 1, ChatColor.translateAlternateColorCodes('&', "&7"));
+	private static final ItemStack n = ItemStackAPI.createItemStack(Material.BLACK_STAINED_GLASS_PANE, 1, "&7");
 	private static final HashMap<HumanEntity, GUI> openGUIs = new HashMap<>();
 	
+	protected String name;
 	protected Inventory design;
 	protected Button[] buttons;
 	
-	public GUI(JavaPlugin main, int rows, String name, Button... buttons) {
-		Validate.notNull(name, "Name cannot be null");
+	public GUI(JavaPlugin main, String name, Inventory design) {
+		// Object params cannot be null
 		Validate.notNull(main, "MainClass cannot be null");
-		Bukkit.getPluginManager().registerEvents(this, main);
+		Validate.notNull(name, "Name cannot be null");
+		Validate.notNull(design, "Design cannot be null");
 		
-		this.design = Bukkit.createInventory(null, (rows % 7) * 9, ChatColor.translateAlternateColorCodes('&', name));
-		for(int i = 0; i < design.getSize(); i++)design.setItem(i, n);
+		this.name = name;
+		this.design = design;
 		this.buttons = new Button[design.getSize()];
-		for(Button button : buttons) addButton(button);
-	}
-	
-	/**
-	 * This Methods shows, if the Entity has an GUI opens to that time.
-	 * 
-	 * @param entity the Entity
-	 * @return a bool, which answers, if the entity shows an GUI right now.
-	 * true means, the entity shows at an gui right now.
-	 * false means, the entity hasn't an open gui right now.
-	 */
-	public static boolean showsGUI(HumanEntity entity) {
-		return openGUIs.containsKey(entity);
-	}
-	
-	@EventHandler
-	public void onButtonClick(InventoryClickEvent event) {
-		if(event.getClickedInventory() != null && event.getCurrentItem() != null && openGUIs.containsKey(event.getWhoClicked())) {
-			event.setCancelled(true);
-			Inventory inv = event.getClickedInventory();
-			if(design.getName().equalsIgnoreCase(inv.getName())) {
-				int slot = event.getSlot();
-				Button button = buttons[slot];
-				if(button != null) {
-					ButtonClickEvent e = new ButtonClickEvent(event, button);
-					Bukkit.getServer().getPluginManager().callEvent(e);
-					if(!e.isCancelled())button.click(e);
-				}
-			}
-		}
-	}
-	
-	@EventHandler
-	public void onDrop(PlayerDropItemEvent event) {
-		if(openGUIs.containsKey(event.getPlayer()))event.setCancelled(true);
-	}
-	
-	@EventHandler
-	public void onClose(InventoryCloseEvent event) {
-		if(openGUIs.containsKey(event.getPlayer()))openGUIs.remove(event.getPlayer());
-	}
-	
-	/**
-	 * This Method add a Button to the GUI and the design of the Inventory.
-	 * The ItemStack represents the design of the button in the GUI. It is recommend to use the {@link ItemStackAPI#createItemStack(Materials, int)}
-	 * method to create an version independent ItemStack.
-	 * 
-	 * @param slot the slot of the Button in the Design. Watch out for {@link ArrayIndexOutOfBoundsException}
-	 * @param item the Design of the Button in the GUI. Watch out for {@link NullPointerException}
-	 * @param function The interface of the ClickEvent
-	 * 
-	 * An example would be 
-	 * <code>
-	 * gui.addButton(0, ItemStackAPI.createItemStack(Materials.STONE, 1), function -> {
-	 *  TODO: What happen if the button is clicked.
-	 * });
-	 * </code>
-	 * 
-	 */
-	public void addButton(int slot, ItemStack item, Consumer<ButtonClickEvent> function) {
-		addButton(new Button(slot, item, function));
+		
+		// put on every empty slot a n-item
+		for(int i = 0; i < design.getSize(); i++)
+			if(design.getItem(i) == null) design.setItem(i, n);
 	}
 	
 	/**
@@ -117,11 +61,50 @@ public class GUI implements Listener {
 	 * </code>
 	 * 
 	 */
-	public void addButton(Button button) {
-		if(button != null) {
-			this.design.setItem(button.getSlotInGUI(), button.getDesign());
-			this.buttons[button.getSlotInGUI()] = button;
+	public void registerButton(int slot, Consumer<ButtonClickEvent> function) {
+		buttons[slot] = new Button(slot, design.getItem(slot), function);
+	}
+	
+	/**
+	 * This Methods shows, if the Entity has open a GUI right now.
+	 * 
+	 * @param entity the Entity
+	 * @return a bool, which answers, if the entity shows an GUI right now.
+	 * true means, the entity shows at a gui right now.
+	 * false means, the entity hasn't an open gui right now.
+	 */
+	public static boolean showsGUI(HumanEntity entity) {
+		return openGUIs.containsKey(entity);
+	}
+	
+	@EventHandler
+	public void onButtonClick(InventoryClickEvent event) {
+		// If there is no null param and player uses a gui right now
+		if(event.getClickedInventory() != null && event.getCurrentItem() != null && openGUIs.containsKey(event.getWhoClicked())) {
+			// cancel unnecesarry event
+			event.setCancelled(true);
+			// If Title is Similar to GUI
+			if(event.getView().getTitle().equalsIgnoreCase(name)) {
+				Button button = buttons[event.getSlot()];
+				if(button != null) {
+					ButtonClickEvent e = new ButtonClickEvent(event, button);
+					// call ButtonClickEvent
+					Bukkit.getServer().getPluginManager().callEvent(e);
+					// execute function if event is not cancelled
+					if(!e.isCancelled())button.click(e);
+				}
+			}
 		}
+	}
+	
+	@EventHandler
+	public void onDrop(PlayerDropItemEvent event) {
+		if(openGUIs.containsKey(event.getPlayer()))event.setCancelled(true);
+	}
+	
+	@EventHandler
+	public void onClose(InventoryCloseEvent event) {
+		if(openGUIs.containsKey(event.getPlayer()))openGUIs.remove(event.getPlayer());
 	}
 	
 	/**
@@ -137,7 +120,7 @@ public class GUI implements Listener {
 		player.openInventory(design);
 		openGUIs.put(player, this);
 	}
-	
+
 	public static class ButtonClickEvent extends Event implements Cancellable {
 
 		private static HandlerList handlers = new HandlerList();

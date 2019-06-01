@@ -32,7 +32,7 @@ public class ConfigCreator {
 	public File loadRessource(String configPath) throws IOException {
 		File configuration = loadFile(configPath);
 		if(configuration.length() == 0L) {
-			try(InputStream in = main.getResource(assetsDirectory + configPath);
+			try(InputStream in = main.getResource(Paths.get(assetsDirectory, configPath).toString());
 					OutputStream out = new FileOutputStream(configuration)) {
 				ByteStreams.copy(in, out);
 			}
@@ -42,8 +42,8 @@ public class ConfigCreator {
 	}
 	
 	private File loadFile(String filePath) throws IOException {
-		File configFile = Paths.get(filePath).toFile();
-		if(!(configFile.mkdirs() || configFile.createNewFile())) 
+		File configFile = Paths.get(main.getDataFolder().getAbsolutePath(), filePath).toFile();
+		if(!(configFile.getParentFile().mkdirs() || configFile.createNewFile())) 
 			main.getLogger().log(Level.INFO, () -> CONFIG_GENERATE.replaceAll("%f", configFile.getName()));
 		
 		return configFile;

@@ -1,4 +1,4 @@
-package de.timeout.libs;
+package de.timeout.libs.config;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,6 +21,8 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.representer.Representer;
 
 import com.google.common.io.Files;
+
+import de.timeout.libs.Reflections;
 
 public class UTFConfig extends YamlConfiguration {
 	
