@@ -1,6 +1,7 @@
 package de.timeout.libs.items;
 
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -20,5 +21,12 @@ public final class ItemStackAPI {
 		item.setItemMeta(meta);
 		
 		return item;
+	}
+
+	
+	public void hideEnchantments(ItemStack item) {
+		ItemMeta meta = item.getItemMeta();
+		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+		item.setItemMeta(meta);
 	}
 }

@@ -17,6 +17,12 @@ public final class Reflections {
 	
 	private Reflections() {}
 
+	/**
+	 * This method creates a Field which is linked to the fieldname in your class. The field is modifiable.
+	 * @param clazz the class, which contains the field
+	 * @param name the fieldname
+	 * @return the field itself
+	 */
 	public static Field getField(Class<?> clazz, String name) {
 			try {
 				Field field = clazz.getDeclaredField(name);
@@ -30,15 +36,22 @@ public final class Reflections {
 		return null;
 	}
 	
+	/**
+	 * This method creates a Field from an object. The field is modifiable
+	 * @param obj the object
+	 * @param name the name of the field
+	 * @return the field itself
+	 */
 	public static Field getField(Object obj, String name) {
-		try {
-			return obj.getClass().getDeclaredField(name);
-		} catch (NoSuchFieldException | SecurityException e) {
-			Bukkit.getLogger().log(Level.WARNING, "Could not find Field " + name + "in Class " + obj.getClass().getName(), e);
-		}
-		return null;
+		return getField(obj.getClass(), name);
 	}
 	
+	/**
+	 * This method returns the value of the Field in your obj
+	 * @param field the field which you want to read
+	 * @param obj the object you want to read
+	 * @return the value, which you are looking for. null if there were an error
+	 */
 	public static Object getValue(Field field, Object obj) {
 		try {
 			field.setAccessible(true);
@@ -49,6 +62,12 @@ public final class Reflections {
 		return null;
 	}
 	
+	/**
+	 * This method gets a SubClass in a class with a certain name
+	 * @param overclass the class which contains the class you are searching for
+	 * @param classname the name of the class you are searching for
+	 * @return the class you are searching for. Null if the class does not exist
+	 */
 	public static Class<?> getSubClass(Class<?> overclass, String classname) {
 		Class<?>[] underclasses = overclass.getClasses();
 		for(Class<?> underclass : underclasses) {
@@ -57,6 +76,11 @@ public final class Reflections {
 		return null;
 	}
 	
+	/**
+	 * This method return an NMS-Class, which has a certain name
+	 * @param nmsClass the name of the NMS-Class
+	 * @return the CLass itself. Null if the class cannot be found.
+	 */
 	public static Class<?> getNMSClass(String nmsClass) {
 		try {
 			String version = Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".";
@@ -68,6 +92,11 @@ public final class Reflections {
 		return null;
 	}
 	
+	/**
+	 * This method returns a class-object from its name
+	 * @param classpath the name of the class
+	 * @return the class itself
+	 */
 	public static Class<?> getClass(String classpath) {
 		try {
 			return Class.forName(classpath);
@@ -77,6 +106,11 @@ public final class Reflections {
 		return null;
 	}
 	
+	/**
+	 * This method returns a CraftBukkit-Class 
+	 * @param clazz the Craftbukkit-Class
+	 * @return the CraftBukkit-Class. Null if the class cannot be found
+	 */
 	public static Class<?> getCraftBukkitClass(String clazz) {
 		try {
 			String version = Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".";
@@ -88,17 +122,35 @@ public final class Reflections {
 		return null;
 	}
 	
+	/**
+	 * This method returns an EntityPlayer-Object of a player
+	 * @param player the player
+	 * @return the EntityPlayer as Object
+	 * @throws ReflectiveOperationException if there was an error
+	 */
 	public static Object getEntityPlayer(Player player) throws ReflectiveOperationException {
 		Method getHandle = player.getClass().getMethod("getHandle");
 		return getHandle.invoke(player);
 	}
 	
+	/**
+	 * This method returns the PlayerConnection as an Object
+	 * @param player the owner of the player connection
+	 * @return the PlayerConnection as Object
+	 * @throws ReflectiveOperationException if there was an error
+	 */
 	public static Object getPlayerConnection(Player player) throws ReflectiveOperationException {
 		Object nmsp = getEntityPlayer(player);
 		Field con = nmsp.getClass().getField("playerConnection");
 		return con.get(nmsp);
 	}
 	
+	/**
+	 * This Method set a value into a Field in an Object
+	 * @param field the Field
+	 * @param obj the Object you want to modifiy
+	 * @param value the new value of the field
+	 */
 	public static void setField(Field field, Object obj, Object value) {
 		try {
 			field.setAccessible(true);
@@ -109,6 +161,11 @@ public final class Reflections {
 		}
 	}
 	
+	/**
+	 * This Method returns the player's GameProfile
+	 * @param player the owner of the GameProfile
+	 * @return the Gameprofile
+	 */
 	public static GameProfile getGameProfile(Player player) {
 		 try {
 			Class<?> craftplayerClass = getCraftBukkitClass("entity.CraftPlayer");
@@ -120,11 +177,17 @@ public final class Reflections {
 		 return new GameProfile(player.getUniqueId(), player.getName());
 	}
 	
+	/**
+	 * This Method returns a Field in a class with a specific fieldtype
+	 * @param target the class
+	 * @param name the name of the field
+	 * @param fieldtype the datatype of the Field
+	 * @return the Field itself. Null if the field cannot be found
+	 */
 	public static <T> Field getField(Class<?> target, String name, Class<T> fieldtype) {
 		for(Field field : target.getDeclaredFields()) {
 			if((name == null || field.getName().equals(name)) && fieldtype.isAssignableFrom(field.getType())) {
-				field.setAccessible(true);
-				return field;
+				return getField(target, name);
 			}
 		}
 		return null;
