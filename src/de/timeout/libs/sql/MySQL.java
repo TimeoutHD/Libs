@@ -9,10 +9,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.mysql.jdbc.Driver;
-
 /**
- * Diese Klasse dient als Verbindung zur MySQL-Datenbank.
+ * This Class is a Hook into the MySQL-Database
  * @author timeout
  *
  */
@@ -30,16 +28,17 @@ public class MySQL {
 	}
 	
 	/**
-	 * Verbindet zur MySQL-Datenbank, benötigt jedoch einen Benutzernamen und das dazugehörige Passwort.
+	 * Connect to MySQL-Database, but needs an username and his password
 	 * 
-	 * @param username Der Benutzername der Programms
-	 * @param password Das dazugehörige Password
-	 * @return Das Resultat, ob es verbunden ist oder nicht.
-	 * @throws SQLException Wenn es einen unerwarteten Fehler gibt
+	 * @param username the username of the database
+	 * @param password the password of the user
+	 * @return a bool, if the hook is successfully connected
+	 * @throws SQLException if there are unexpected errors
 	 */
 	public boolean connect(String username, String password) throws SQLException {
 		if(!isConnected()) {
-			DriverManager.registerDriver(new Driver());
+			// Bungeecord manage Driver-initialization -> not necessary
+			// DriverManager.registerDriver(new Driver());
 			connection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true&useUnicode=true&useJDBCCompilantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", username, password);
 			return true;
 		}
@@ -47,29 +46,32 @@ public class MySQL {
 	}
 	
 	/**
-	 * Prüft, ob eine Verbindung genutzt werden kann. Wenn keine Verbindung besteht oder die Verbindung geschlossen ist,
-	 * ist das Ergebnis false. Ansonsten kann die Verbindung genutzt werden.
-	 * @return
-	 * @throws SQLException
+	 * Checks, if a coonection exists and is used. 
+	 * If there is no connection, or the connection is closed, the method will return false.
+	 * Else the method will return true.
+	 * 
+	 * @return is the connection can be used.
+	 * @throws SQLException if there are unexpected errors
 	 */
 	public boolean isConnected() throws SQLException {
 		return connection != null && !connection.isClosed();
 	}
 	
 	/**
-	 * Gibt die aktuelle Verbindung zurück. 
-	 * @return die aktuelle Verbindung als Connection-Interface
+	 * return the actual connection
+	 * @return the actual connection as Connection-Interface
 	 */
 	public Connection getConnection() {
 		return connection;
 	}
 	
 	/**
-	 * Fügt die Parameter (Argumente) in das Statement ein und gibt dieses zurück
-	 * @param statement das Statement
-	 * @param args die Argumente
-	 * @return Das konvertierte Statement
-	 * @throws SQLException Wenn es ein Fehler bei der Konvertierung gab
+	 * Puts parametrt (argumeants) into the statement and returns the statement.
+	 * 
+	 * @param statement the statement
+	 * @param args the arguments
+	 * @return the converted statement
+	 * @throws SQLException If there was an error.
 	 */
 	private PreparedStatement convertStatement(String statement, String[] args) throws SQLException {
 		if(statement != null) {
@@ -81,14 +83,13 @@ public class MySQL {
 	}
 	
 	/**
-	 * Führt ein Void-Statement aus. Ein Void-Statement ist ein Statement, dass nur eine Erfolgsbestätigung sendet, anstatt
-	 * einer Relation. Diese Methode ist nützlich, wenn man die Befehle INSERT, UPDATE oder DELETE ausführen möchte.
+	 * Execute a Void-Statement. A void statement is a statement, that returns a bool instead of a table like INSERT, UPDATE or DELETE.
 	 * 
-	 * @param statement Das Statement
-	 * @param variables Die Variablen in der richtigen Reihenfolge. Variablen können im Statement mit '?' erstellt werden.
-	 * @return die Erfolgsbestätigung als Boolean.
-	 * @throws SQLException Wenn im Syntax des MySQL-Statments ein Fehler vorliegt.
-	 * @throws IllegalStateException Wenn die Verbindung geschlossen oder nicht nutzbar ist, quasi wenn {@link MySQL#isConnected()} false zurückgibt.
+	 * @param statement The statement
+	 * @param variables the arguments in the right order. Variables in statements are displayed with '?'
+	 * @return a bool, which contains the result
+	 * @throws SQLException If there were an error in the MySQL-Statement
+	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
 	 */
 	public boolean executeVoidStatement(String statement, String... variables) throws SQLException {
 		if(!isConnected()) {
@@ -97,15 +98,14 @@ public class MySQL {
 	}
 	
 	/**
-	 * Führt ein Statement aus und gibt eine geeignete Relation zurück. Diese Methode ist hauptsächlich beim Befehl SELECT sinnvoll.
-	 * Das zurückgegebene Objekt ist eine Table, die verschiedene Spalten (Columns) und Zeilen (Tuples) hat. Ein Datensatz wird
-	 * in dieser Klasse Element genannt. 
+	 * Execute a statement and returns a table. This method is used with the "SELECT"-Statement.
+	 * The return-type is a table which has columns and tuples. 
 	 *  
-	 * @param statement Das MySQL-Statement
-	 * @param variables Die Variablen in der richtigen Reihenfolge. Variablem können im Statement mit '?' erstellt werden
-	 * @return Die Relation als Table-Objekt.
-	 * @throws SQLException Wenn im Syntax des MySQL-Statments ein Fehler vorliegt.
-	 * @throws IllegalStateException Wenn die Verbindung geschlossen oder nicht nutzbar ist, quasi wenn {@link MySQL#isConnected()} false zurückgibt.
+	 * @param statement The statement
+	 * @param variables the arguments in the right order. Variables in statements are displayred with '?'
+	 * @return the table as table object
+	 * @throws SQLException If there is an error in your MySQL-Statement
+	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
 	 */
 	public Table executeStatement(String statement, String... variables) throws SQLException {
 		if(!isConnected()) {
@@ -114,26 +114,27 @@ public class MySQL {
 	}
 	
 	/**
-	 * Diese Klasse ist eine Instanz einer MySQL-Relation. Eine Relation besteht aus Attributen (Columns) und 
-	 * Zeilen (Rows). Ein Row wird in dieser Klasse Tuple genannt. Die Tuple ist wiederum in Elemente (Datensätze) unterteilt.  
+	 * This class is an instance of a typical mysql table. A table contains columns and rows. 
+	 * A row will be called tuple in this class.
+	 * 
 	 * @author Timeout
 	 *
 	 */
 	public static class Table {
 		
-		private final List<Tuple> tuples = new ArrayList<>();
+		private final List<Row> tuples = new ArrayList<>();
 		
 		private Column[] columns;
 		
 		public Table(ResultSet rs) throws SQLException {
-			// Columnanzahl definieren.
+			// define ColumnCount
 			columns = new Column[rs.getMetaData().getColumnCount()];
 			for(int i = 0; i < columns.length; i++) {
-				// Columns initialisieren
+				// initialize columns
 				columns[i] = new Column(rs.getMetaData().getColumnName(i));
 			}
 			
-			// Werte in Tuplen und Columns speichern
+			// write values in columns and rows
 			int index = 0;
 			while(rs.next()) {
 				String[] cache = new String[columns.length];
@@ -142,18 +143,19 @@ public class MySQL {
 					columns[i].addValue(cache[i]);
 				}
 				
-				tuples.add(new Tuple(index, cache));
+				tuples.add(new Row(index, cache));
 				index++;
 			}
 		}
 		
 		/**
-		 * Gibt einen bestimmten Wert aus der Relation zurück. Dabei muss der Attributname (Spaltenname) und die Zeile
-		 * angegeben werden. 
+		 * Returns a certain value in your table. 
+		 * The name of the column and the index of the row must be given
 		 * 
-		 * @param columnName Der Attributname (Spaltenname) 
-		 * @param index Die Zeilenzahl
-		 * @return Das Element (Die Zelle) der Relation an der Stelle
+		 * @param columnName the name of the column
+		 * @param index the index of the row. Beginning with 0
+		 * @return the value on this location
+		 * @throws IllegalArgumentException if the columnname cannot be found.
 		 */
 		public String getValue(String columnName, int index) {
 			for(Column column : columns)
@@ -163,11 +165,11 @@ public class MySQL {
 		}
 		
 		/**
-		 * Gibt eine Spalte (Tuple) der Relation zurück. Dabei ist der Index von 0 aus zu zählen.
-		 * @param index der Index
-		 * @return Die komplette Spalte
+		 * Returns an entire row in the Database.
+		 * @param index the index of the row. Beginning with 0
+		 * @return the entire row
 		 */
-		public Tuple getTuple(int index) {
+		public Row getRow(int index) {
 			int length = columns.length;
 			String[] values = new String[length];
 			String[] columnNames = new String[length];
@@ -177,12 +179,12 @@ public class MySQL {
 				values[i] = columns[i].getValue(index);
 			}
 			
-			return new Tuple(index, columnNames, values);
+			return new Row(index, columnNames, values);
 		}
 		
 		/**
-		 * Gibt zurück, ob eine Relation leer ist
-		 * @return Ob die Relation leer ist als Boolean
+		 * Checks if the table is empty
+		 * @return the result
 		 */
 		public boolean isEmpty() {
 			return tuples.isEmpty();
@@ -190,7 +192,8 @@ public class MySQL {
 	}
 	
 	/**
-	 * Das ist ein Attribut (eine Spalte) der Relation. Eine Spalte hat einen Namen und mehrere Attributwerte.
+	 * This is a column of the table. A column has a name and values.
+	 * 
 	 * @author Timeout
 	 *
 	 */
@@ -205,70 +208,70 @@ public class MySQL {
 		}
 		
 		/**
-		 * Gibt den Namen des Attributs zurück
-		 * @return den Attributnamen
+		 * Returns the name of the column
+		 * @return the name of the column
 		 */
 		public String getName() {
 			return name;
 		}
 		
 		/**
-		 * Gibt den Attributwert an einer bestimmten Stelle zurück. Dafür muss eine Zeile angegeben werden.
-		 * @param index die Zeile, wo sich der gesuchte Attributwert befindet
-		 * @return Der Attributwert als String.
+		 * Returns the value at a certain index. 
+		 * @param the row of the value. Beginning with 0
+		 * @return the value
 		 */
 		public String getValue(int index) {
 			return index < values.size() ? values.get(index) : null;
 		}
 		
-		public void addValue(String element) {
+		private void addValue(String element) {
 			values.add(element);
 		}
 	}
 	
 	/**
-	 * Diese Klasse vertritt eine gesamte Zeile der Relation.
+	 * This class represents a complete row in the table
+	 * 
 	 * @author timeout
 	 *
 	 */
-	public static class Tuple {
+	public static class Row {
 		
 		private int index;
 		private String[] columnNames;
 		private String[] values;
 		
-		public Tuple(int i, String[] columnNames, String... elements) {
+		public Row(int i, String[] columnNames, String... elements) {
 			this.index = i;
 			this.values = elements.clone();
 			this.columnNames = columnNames.clone();
 		}
 		
 		/**
-		 * Gibt die Zeilenzahl der Tuple zurück (Wo sich die Zeile befindet)
-		 * @return die Zeilenzahl
+		 * Returns the index of the row in the table.
+		 * @return the index of the row. Beginning with 0
 		 */
 		public int getIndex() {
 			return index;
 		}
 		
 		/**
-		 * Gibt den Attributwert an einem Attrubut (einer Spalte) zurück
-		 * @param column die Zahl der Spalte
-		 * @return Der Attributwert als String.
+		 * Returns the value of a column
+		 * @return the value as String.
 		 */
-		public String getElement(int column) {
+		public String getValue(int column) {
 			return values[column];
 		}
 				
 		/**
-		 * Gibt den Attrubutwert an einem Attrubut (einer Spalte) zurück. Diese Methode ignoriert Case
-		 * @param columnName der Name des Attributs.
-		 * @return Der Attributwert als String.
+		 * Returns a value of a column
+		 * @param colomnName the name of the column
+		 * @return the value as string
 		 * 
-		 * @throws IllegalArgumentException Wenn columnName null ist.
-		 * @throws IllegalStateException Wenn der gesuchte columnName nicht gefunden werden kann
+		 * @throws IllegalArgumentException if columnName is null
+		 * @throws IllegalStateException if the column cannot be found
 		 */
-		public String getElement(String columnName) {
+		public String getValue(String columnName) {
 			if(columnName != null) {
 				int i;
 				for(i = 0; i < columnNames.length; i++) {
@@ -282,8 +285,8 @@ public class MySQL {
 		}
 		
 		/**
-		 * Gibt alle Attributwerte als Liste zurück. Sortiert nach der richtigen Reihenfolge der Attribute in der Relation
-		 * @return alle Attribute als Liste.
+		 * returns all values in the column sort by index
+		 * @return all values as list
 		 */
 		public List<String> getTupleValues() {
 			return Arrays.asList(values);
