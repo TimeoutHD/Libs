@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>de.timeout</groupId>
   <artifactId>Libs</artifactId>
-  <version>1.2</version>
+  <version>1.2_180</version>
   <build>
     <sourceDirectory>src</sourceDirectory>
     <resources>
@@ -57,7 +57,7 @@
 	<dependency>
   		<groupId>org.spigotmc</groupId>
   		<artifactId>spigot</artifactId>
-  		<version>1.14.2-R0.1-SNAPSHOT</version>
+  		<version>1.8.8-R0.1-SNAPSHOT</version>
   		<scope>provided</scope>
   	</dependency>
   </dependencies>

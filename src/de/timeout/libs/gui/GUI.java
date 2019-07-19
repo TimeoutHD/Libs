@@ -23,7 +23,7 @@ import de.timeout.libs.items.ItemStackAPI;
 
 public class GUI implements Listener {
 	
-	private static final ItemStack n = ItemStackAPI.createItemStack(Material.BLACK_STAINED_GLASS_PANE, 1, "&7");
+	private static final ItemStack n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, (short) 7,"&7");
 	private static final HashMap<HumanEntity, GUI> openGUIs = new HashMap<>();
 	
 	protected String name;

@@ -32,12 +32,12 @@ import net.md_5.bungee.api.ChatColor;
 
 public class PlayerSkull extends ItemStack {
 	
-	public static final ItemStack SKELETON = new ItemStack(Material.SKELETON_SKULL);
-	public static final ItemStack WITHER_SKELETON = new ItemStack(Material.WITHER_SKELETON_SKULL);
-	public static final ItemStack ZOMBIE = new ItemStack(Material.ZOMBIE_HEAD);
-	public static final ItemStack CREEPER = new ItemStack(Material.CREEPER_HEAD);
-	public static final ItemStack ENDERDRAGON = new ItemStack(Material.DRAGON_HEAD);
-	public static final ItemStack STEVE = new ItemStack(Material.PLAYER_HEAD);
+	public static final ItemStack SKELETON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 0);
+	public static final ItemStack WITHER_SKELETON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 1);
+	public static final ItemStack ZOMBIE = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 2);
+	public static final ItemStack CREEPER = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 4);
+	public static final ItemStack ENDERDRAGON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 5);
+	public static final ItemStack STEVE = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 3);
 	public static final ItemStack ALEX = new PlayerSkull("MHF_Alex");
 	public static final ItemStack BLAZE = new PlayerSkull("MHF_Blaze");
 	public static final ItemStack CAVE_SPIDER = new PlayerSkull("MHF_CaveSpider");
@@ -82,8 +82,7 @@ public class PlayerSkull extends ItemStack {
 	private OfflinePlayer owner;
 	
 	public PlayerSkull(String displayname, int amount, OfflinePlayer owner) {
-		super(new ItemStack(Material.PLAYER_HEAD,
-				amount > 0 ? amount : 1));
+		super(ItemStackAPI.createItemStack(Material.SKULL_ITEM, amount > 0 ? amount : 1, (short) 3));
 		
 		// Set Displayname
 		ItemMeta meta = this.getItemMeta();
@@ -157,15 +156,6 @@ public class PlayerSkull extends ItemStack {
 		return false;
 	}
 	
-	@Override
-	public int hashCode() {
-		int hash = super.hashCode();
-		
-		hash *= owner.hashCode();
-		hash *= ownerProfile != null ? ownerProfile.hashCode() : 1;
-		return hash;
-	}
-
 	/**
 	 * Set the SkullMeta of this Skull
 	 * 

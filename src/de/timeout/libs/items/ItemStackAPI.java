@@ -25,8 +25,20 @@ public final class ItemStackAPI {
 	 * @return the itemstack
 	 */
 	public static ItemStack createItemStack(Material material, int amount, String displayName) {
-		// Create Item
-		ItemStack item = new ItemStack(material, amount);
+		return createItemStack(material, amount, (short) 0, displayName);
+	}
+	
+	/**
+	 * This method creates an ItemStack
+	 * @param material the material of your ItemStack
+	 * @param amount the amount of your itemstack. Can be negative, so be carefull with negative values
+	 * @param damage the Damage / SubID of your ItemStack
+	 * @param displayName the name of the ItemStack. ColorCodes are written with '&'
+	 * @return the itemstack
+	 */
+	public static ItemStack createItemStack(Material material, int amount, short damage, String displayName) {
+		// Create ItemStack
+		ItemStack item = new ItemStack(material, amount, damage);
 		
 		// Set DisplayName with ColorCode if displayName is not null
 		if(displayName != null) {
@@ -54,10 +66,21 @@ public final class ItemStackAPI {
 	 * This method creates an ItemStack without a displayname
 	 * @param material the material of the itemstack
 	 * @param amount the amount 
-	 * @return
+	 * @return the itemstack
 	 */
 	public static ItemStack createItemStack(Material material, int amount) {
 		return createItemStack(material, amount, null);
+	}
+	
+	/**
+	 * This method creates an ItemStack without a displayname
+	 * @param material the material of the itemstack
+	 * @param amount the amount
+	 * @param damage the Damage / SubID of your ItemStack
+	 * @return the itemstack
+	 */
+	public static ItemStack createItemStack(Material material, int amount, short damage) {
+		return createItemStack(material, amount, damage, null);
 	}
 
 	/**
