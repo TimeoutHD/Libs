@@ -105,7 +105,7 @@ public class MySQL {
 	 * @throws SQLException If there were an error in the MySQL-Statement
 	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
 	 */
-	public boolean executeVoidStatement(String statement, String... variables) throws SQLException {
+	public synchronized boolean executeVoidStatement(String statement, String... variables) throws SQLException {
 		if(!isConnected()) {
 			return convertStatement(statement, variables).execute();
 		} else throw new IllegalStateException("Connection is closed. Please connect to a MySQL-Database before using any statements");
@@ -121,7 +121,7 @@ public class MySQL {
 	 * @throws SQLException If there is an error in your MySQL-Statement
 	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
 	 */
-	public Table executeStatement(String statement, String... variables) throws SQLException {
+	public synchronized Table executeStatement(String statement, String... variables) throws SQLException {
 		if(!isConnected()) {
 			return new Table(convertStatement(statement, variables).executeQuery());
 		} else throw new IllegalStateException("Connection is closed. Please connect to a MySQL-Database before using any statements");
