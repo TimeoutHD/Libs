@@ -46,7 +46,7 @@ public class MySQL {
 	}
 	
 	/**
-	 * Checks, if a coonection exists and is used. 
+	 * Checks, if a connection exists and is used. 
 	 * If there is no connection, or the connection is closed, the method will return false.
 	 * Else the method will return true.
 	 * 
@@ -55,6 +55,20 @@ public class MySQL {
 	 */
 	public boolean isConnected() throws SQLException {
 		return connection != null && !connection.isClosed();
+	}
+	
+	/**
+	 * Disconnect from a MySQL-Database if this object is connected
+	 * 
+	 * @return the result. true if the object is disconnected successful, false if the object isn't connected at all
+	 * @throws SQLException if there are unexpected errors
+	 */
+	public boolean disconnect() throws SQLException {
+		if(isConnected()) {
+			this.connection.close();
+			return true;
+		}
+		return false;
 	}
 	
 	/**
