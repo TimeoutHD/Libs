@@ -1,13 +1,21 @@
 package de.timeout.libs.items;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
+import java.util.logging.Level;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.util.io.BukkitObjectInputStream;
+import org.bukkit.util.io.BukkitObjectOutputStream;
 
 import net.md_5.bungee.api.ChatColor;
 
@@ -140,5 +148,42 @@ public final class ItemStackAPI {
 		meta.setLore(lore);
 		// Set ItemMeta
 		item.setItemMeta(meta);
+	}
+	
+	/**
+	 * Encode item stack.
+	 *
+	 * @param item the item
+	 * @return the string
+	 */
+	public static String encodeItemStack(ItemStack item) {
+		try {
+			ByteArrayOutputStream str = new ByteArrayOutputStream();
+			try(BukkitObjectOutputStream data = new BukkitObjectOutputStream(str)) {
+				data.writeObject(item);
+			}
+			return Base64.getEncoder().encodeToString(str.toByteArray());
+		} catch (IOException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Could not create String", e);
+		}
+		return null;
+	}
+	
+	/**
+	 * Decode item stack.
+	 *
+	 * @param base64 the base 64
+	 * @return the item stack
+	 */
+	public static ItemStack decodeItemStack(String base64) {
+		try {
+			ByteArrayInputStream str = new ByteArrayInputStream(Base64.getDecoder().decode(base64));
+			try(BukkitObjectInputStream data = new BukkitObjectInputStream(str)) {
+				return (ItemStack) data.readObject();
+			}
+		} catch (IOException | ClassNotFoundException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Could not create Object", e);
+		}
+		return null;
 	}
 }
