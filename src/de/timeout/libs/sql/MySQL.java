@@ -179,6 +179,21 @@ public class MySQL {
 		}
 		
 		/**
+		 * Returns a certain value in your table
+		 * Both indices must be given and begins with 0
+		 * 
+		 * @param columnIndex the index of the column begins with 0
+		 * @param rowIndex the index of the row begins with 0
+		 * @return the value on this location
+		 * @throws ArrayIndexOutOfBoundsException if the columnIndex is greater than the actual amount of columns
+		 */
+		public String getValue(int columnIndex, int rowIndex) {
+			if(columnIndex < columns.length) {
+				return columns[columnIndex].getValue(rowIndex);
+			} else throw new ArrayIndexOutOfBoundsException("ColummIndex is greater than actual columns");
+		}
+		
+		/**
 		 * Returns an entire row in the Database.
 		 * @param index the index of the row. Beginning with 0
 		 * @return the entire row
