@@ -54,7 +54,7 @@ public class GUI implements Listener {
 	 * 
 	 * An example would be 
 	 * <code>
-	 * Button button = new Button(0, ItemStackAPI.createItemStack(Materials.STONE, 1), function -> {
+	 * Button button = new Button(0, function -> {
 	 *  TODO: What happen if the button is clicked.
 	 * });
 	 * gui.addButton(button);

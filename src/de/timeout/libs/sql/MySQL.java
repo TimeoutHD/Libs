@@ -212,6 +212,22 @@ public class MySQL {
 		}
 		
 		/**
+		 * Returns all Rows of this Table
+		 * @return rows as ArrayList
+		 */
+		public List<Row> getRows() {
+			return new ArrayList<>(tuples);
+		}
+		
+		/**
+		 * Returns all Columns of this Table
+		 * @return all Columns as Column Array
+		 */
+		public Column[] getColumns() {
+			return columns.clone();
+		}
+		
+		/**
 		 * Checks if the table is empty
 		 * @return the result
 		 */
