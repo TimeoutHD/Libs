@@ -44,6 +44,9 @@ public class GUI implements Listener {
 		// put on every empty slot a n-item
 		for(int i = 0; i < design.getSize(); i++)
 			if(design.getItem(i) == null) design.setItem(i, n);
+		
+		// register Click-Listener
+		Bukkit.getPluginManager().registerEvents(this, main);
 	}
 	
 	/**
