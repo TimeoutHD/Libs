@@ -124,6 +124,11 @@ public class GUI implements Listener {
 		player.openInventory(design);
 		openGUIs.put(player, this);
 	}
+	
+	public void destroy() {
+		// Unregister events
+		HandlerList.unregisterAll(this);
+	}
 
 	public static class ButtonClickEvent extends Event implements Cancellable {
 
