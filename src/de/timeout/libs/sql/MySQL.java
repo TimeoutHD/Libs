@@ -145,7 +145,7 @@ public class MySQL {
 			columns = new Column[rs.getMetaData().getColumnCount()];
 			for(int i = 0; i < columns.length; i++) {
 				// initialize columns
-				columns[i] = new Column(rs.getMetaData().getColumnName(i));
+				columns[i] = new Column(rs.getMetaData().getColumnName(i +1));
 			}
 			
 			// write values in columns and rows
@@ -153,7 +153,7 @@ public class MySQL {
 			while(rs.next()) {
 				String[] cache = new String[columns.length];
 				for(int i = 0; i < columns.length; i++) {
-					cache[i] = rs.getString(i);
+					cache[i] = rs.getString(i +1);
 					columns[i].addValue(cache[i]);
 				}
 				

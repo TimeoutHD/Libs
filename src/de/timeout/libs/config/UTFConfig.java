@@ -106,7 +106,9 @@ public class UTFConfig extends YamlConfiguration {
 			yamlRepresenter.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
 
 			// convert header and dump into a string
-			return this.buildHeader() + yaml.dump(this.getValues(false)).replaceAll("{}\n", "");
+			String dump = yaml.dump(this.getValues(false));
+			if("{}\n".equals(dump)) dump = "";
+			return this.buildHeader() + dump;
 		} else throw new IllegalArgumentException("Could not load required attributes from Configuration");
 	}
 	
