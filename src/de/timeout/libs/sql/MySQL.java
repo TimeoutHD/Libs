@@ -39,7 +39,7 @@ public class MySQL {
 		if(!isConnected()) {
 			// Bungeecord manage Driver-initialization -> not necessary
 			// DriverManager.registerDriver(new Driver());
-			connection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true&useUnicode=true&useJDBCCompilantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", username, password);
+			connection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true&useOldAliasMetadataBehavior=true&useUnicode=true&useJDBCCompilantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", username, password);
 			return true;
 		}
 		return false;
@@ -136,16 +136,19 @@ public class MySQL {
 	 */
 	public static class Table {
 		
-		private final List<Row> tuples = new ArrayList<>();
+		private final List<Row> rows = new ArrayList<>();
 		
 		private Column[] columns;
 		
 		public Table(ResultSet rs) throws SQLException {
 			// define ColumnCount
 			columns = new Column[rs.getMetaData().getColumnCount()];
+			// define ColumnNames
+			String[] columnNames = new String[columns.length];
 			for(int i = 0; i < columns.length; i++) {
 				// initialize columns
 				columns[i] = new Column(rs.getMetaData().getColumnName(i +1));
+				columnNames[i] = rs.getMetaData().getColumnLabel(i + 1);
 			}
 			
 			// write values in columns and rows
@@ -157,7 +160,7 @@ public class MySQL {
 					columns[i].addValue(cache[i]);
 				}
 				
-				tuples.add(new Row(index, cache));
+				rows.add(new Row(index, columnNames, cache));
 				index++;
 			}
 		}
@@ -216,7 +219,7 @@ public class MySQL {
 		 * @return rows as ArrayList
 		 */
 		public List<Row> getRows() {
-			return new ArrayList<>(tuples);
+			return new ArrayList<>(rows);
 		}
 		
 		/**
@@ -232,7 +235,7 @@ public class MySQL {
 		 * @return the result
 		 */
 		public boolean isEmpty() {
-			return tuples.isEmpty();
+			return rows.isEmpty();
 		}
 	}
 	

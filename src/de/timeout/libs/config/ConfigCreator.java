@@ -65,7 +65,7 @@ public class ConfigCreator {
 	 */
 	private File loadFile(String filePath) throws IOException {
 		File configFile = Paths.get(main.getDataFolder().getAbsolutePath(), filePath).toFile();
-		if(!(configFile.getParentFile().mkdirs() || configFile.createNewFile())) 
+		if(configFile.getParentFile().mkdirs() || configFile.createNewFile()) 
 			main.getServer().getConsoleSender().sendMessage(CONFIG_GENERATE.replaceAll("%f", configFile.getName()));
 		
 		return configFile;

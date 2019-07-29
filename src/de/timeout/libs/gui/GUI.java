@@ -1,6 +1,7 @@
 package de.timeout.libs.gui;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.function.Consumer;
 
 import org.apache.commons.lang.Validate;
@@ -24,7 +25,7 @@ import de.timeout.libs.items.ItemStackAPI;
 public class GUI implements Listener {
 	
 	private static final ItemStack n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, (short) 7,"&7");
-	private static final HashMap<HumanEntity, GUI> openGUIs = new HashMap<>();
+	private static final HashMap<HumanEntity, GUI> openGUIs = new LinkedHashMap<>(128);
 	
 	protected String name;
 	protected Inventory design;
