@@ -2,6 +2,7 @@ package de.timeout.libs.gui;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.apache.commons.lang.Validate;
@@ -27,6 +28,7 @@ public class GUI implements Listener {
 	private static final ItemStack n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, (short) 7,"&7");
 	private static final HashMap<HumanEntity, GUI> openGUIs = new LinkedHashMap<>(128);
 	
+	protected UUID uniqueID;
 	protected String name;
 	protected Inventory design;
 	protected Button[] buttons;
@@ -40,6 +42,7 @@ public class GUI implements Listener {
 		this.name = name;
 		this.design = design;
 		this.buttons = new Button[design.getSize()];
+		this.uniqueID = UUID.randomUUID();
 		
 		// put on every empty slot a n-item
 		for(int i = 0; i < design.getSize(); i++)
@@ -128,6 +131,24 @@ public class GUI implements Listener {
 	public void destroy() {
 		// Unregister events
 		HandlerList.unregisterAll(this);
+		// for each player
+		openGUIs.keySet().forEach(p -> {
+			// If player has this gui open.
+			if(openGUIs.get(p).getUniqueID().toString().equalsIgnoreCase(this.uniqueID.toString())) {
+				// close it
+				p.closeInventory();
+				// remove him from HashMap
+				openGUIs.remove(p);
+			}
+		});
+	}
+	
+	public String getName() {
+		return name;
+	}
+	
+	public UUID getUniqueID() {
+		return uniqueID;
 	}
 
 	public static class ButtonClickEvent extends Event implements Cancellable {
