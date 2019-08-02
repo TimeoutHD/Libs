@@ -15,6 +15,8 @@ public final class Reflections {
 		
 	private static final Field modifiers = getField(Field.class, "modifiers");
 	
+	private static final Class<?> packetClass = getNMSClass("Packet");
+	
 	private Reflections() {}
 
 	/**
@@ -146,6 +148,17 @@ public final class Reflections {
 	}
 	
 	/**
+	 * This method sends a Packet to a Player
+	 * @param player the Player
+	 * @param packet the packet
+	 * @throws ReflectiveOperationException if the object is not a packet
+	 */
+	public static void sendPacket(Player player, Object packet) throws ReflectiveOperationException {
+		Object playerConnection = getPlayerConnection(player);
+		playerConnection.getClass().getMethod("sendPacket", packetClass).invoke(playerConnection, packet);
+	}
+	
+	/**
 	 * This Method set a value into a Field in an Object
 	 * @param field the Field
 	 * @param obj the Object you want to modifiy
@@ -191,5 +204,16 @@ public final class Reflections {
 			}
 		}
 		return null;
+	}
+	
+	/**
+	 * This method modifies a field with a certain name for a certain object
+	 * @param object the object you want to modify
+	 * @param fieldName the name of the Field
+	 * @param value the Value you want to insert at this Field
+	 */
+	public static void setValue(Object object, String fieldName, Object value) {
+		Field field = getField(object, fieldName);
+		Reflections.setField(field, object, value);
 	}
 }
