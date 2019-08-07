@@ -1,8 +1,8 @@
 package de.timeout.libs.gui;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import org.apache.commons.lang.Validate;
@@ -24,9 +24,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import de.timeout.libs.items.ItemStackAPI;
 
 public class GUI implements Listener {
-	
+
 	private static final ItemStack n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, (short) 7,"&7");
-	private static final HashMap<HumanEntity, GUI> openGUIs = new LinkedHashMap<>(128);
+	private static final Map<HumanEntity, GUI> openGUIs = new ConcurrentHashMap<>(Bukkit.getMaxPlayers());
+	
+	private static boolean registered;
 	
 	protected UUID uniqueID;
 	protected String name;
@@ -40,36 +42,104 @@ public class GUI implements Listener {
 		Validate.notNull(design, "Design cannot be null");
 		
 		this.name = name;
-		this.design = design;
+		this.design = Bukkit.createInventory(null, design.getSize(), name);
 		this.buttons = new Button[design.getSize()];
 		this.uniqueID = UUID.randomUUID();
 		
 		// put on every empty slot a n-item
-		for(int i = 0; i < design.getSize(); i++)
-			if(design.getItem(i) == null) design.setItem(i, n);
+		for(int i = 0; i < design.getSize(); i++) {
+			if(design.getItem(i) == null) this.design.setItem(i, n);
+			else this.design.setItem(i, design.getItem(i));
+		}
 		
-		// register Click-Listener
-		Bukkit.getPluginManager().registerEvents(this, main);
+		// if GUIs are not initialized
+		if(!registered) {
+			// register Click-Listener
+			Bukkit.getPluginManager().registerEvents(this, main);
+			// change register to true
+			registered = true;
+		}
 	}
 	
 	/**
-	 * This Method add a Button to the GUI and the design of the Inventory.
+	 * This Constructor creates a clone of the Base-GUI
+	 * @param base the Base-GUI
+	 * @param main the main instance of the plugin
+	 */
+	public GUI(GUI base, JavaPlugin main) {
+		// Check not Null
+		Validate.notNull(base, "Base-GUI cannot be null");
+		
+		// set Values
+		this.name = base.getName();
+		this.design = base.getDesign();
+		this.buttons = base.getButtons();
+		this.uniqueID = UUID.randomUUID();
+		
+		// if GUIs are not initialized
+		if(!registered) {
+			// register Click-Listener
+			Bukkit.getPluginManager().registerEvents(this, main);
+			// change register to true
+			registered = true;
+		}
+	}
+	
+	/**
+	 * Returns the design of the gui
+	 * @return the design
+	 */
+	public Inventory getDesign() {
+		return design;
+	}
+	
+	/**
+	 * This Method returns an Array with each Button on each Slot in the design. The Button contains the click-function
+	 * @return the buttons as array
+	 */
+	public Button[] getButtons() {
+		return buttons.clone();
+	}
+
+	/**
+	 * This Method add a Button to the GUI.
 	 * The ItemStack represents the design of the button in the GUI. It is recommend to use the {@link ItemStackAPI#createItemStack(Materials, int)}
 	 * method to create an version independent ItemStack.
 	 * 
-	 * @param button the created Button
+	 * @param slot the slot where the button should be
+	 * @param button the function
 	 * 
 	 * An example would be 
 	 * <code>
-	 * Button button = new Button(0, function -> {
+	 * registerButton(0, function -> {
 	 *  TODO: What happen if the button is clicked.
 	 * });
-	 * gui.addButton(button);
 	 * </code>
 	 * 
 	 */
 	public void registerButton(int slot, Consumer<ButtonClickEvent> function) {
 		buttons[slot] = new Button(slot, design.getItem(slot), function);
+	}
+	
+	/**
+	 * This Method adds a Button to the GUI.
+	 * The ItemStack represents hte design of hte button in the GUI. It is recommend to use the {@link ItemStackAPI#createItemStack(Material, int,)}
+	 * method to create an versiob independent ItemStack
+	 * 
+	 * @param slot the slot where the button should be
+	 * @param item the ItemStack-Design of the Button
+	 * @param function what happens when a player clicks the button
+	 * 
+	 * An example would be
+	 * <code>
+	 * registerButton(0, ItemStackAPI.createItemStack(Material.GRASS), function -> {
+	 * 	TODO: What happens if the button is clicked
+	 * });
+	 * </code>
+	 */
+	public void registerButton(int slot, ItemStack item, Consumer<ButtonClickEvent> function) {
+		design.setItem(slot, item);
+		buttons[slot] = new Button(slot, item, function);
 	}
 	
 	/**
@@ -86,13 +156,17 @@ public class GUI implements Listener {
 	
 	@EventHandler
 	public void onButtonClick(InventoryClickEvent event) {
+		System.out.println("Event getriggert");
 		// If there is no null param and player uses a gui right now
-		if(event.getClickedInventory() != null && event.getCurrentItem() != null && openGUIs.containsKey(event.getWhoClicked())) {
+		if(event.getClickedInventory() != null && event.getCurrentItem() != null && openGUIs.containsKey(event.getWhoClicked())) {	
 			// cancel unnecesarry event
 			event.setCancelled(true);
 			// If Title is Similar to GUI
-			if(event.getView().getTitle().equalsIgnoreCase(name)) {
-				Button button = buttons[event.getSlot()];
+			System.out.println("Ist eine GUI");
+			if(event.getView().getTitle().equalsIgnoreCase(openGUIs.get(event.getWhoClicked()).getName())) {
+				System.out.println("Name ist valid");
+				Button button = openGUIs.get(event.getWhoClicked()).getButtons()[event.getSlot()];
+				System.out.println(button);
 				if(button != null) {
 					ButtonClickEvent e = new ButtonClickEvent(event, button);
 					// call ButtonClickEvent
@@ -111,7 +185,7 @@ public class GUI implements Listener {
 	
 	@EventHandler
 	public void onClose(InventoryCloseEvent event) {
-		if(openGUIs.containsKey(event.getPlayer()))openGUIs.remove(event.getPlayer());
+		openGUIs.remove(event.getPlayer());
 	}
 	
 	/**
@@ -124,13 +198,12 @@ public class GUI implements Listener {
 	 */
 	public void openGUI(HumanEntity player) {
 		Validate.notNull(player, "The Player cannot be null");
+		openGUIs.remove(player);
 		player.openInventory(design);
 		openGUIs.put(player, this);
 	}
 	
 	public void destroy() {
-		// Unregister events
-		HandlerList.unregisterAll(this);
 		// for each player
 		openGUIs.keySet().forEach(p -> {
 			// If player has this gui open.
@@ -149,6 +222,16 @@ public class GUI implements Listener {
 	
 	public UUID getUniqueID() {
 		return uniqueID;
+	}
+	
+	/**
+	 * This method checks if there is a Button on this slot
+	 * @param slot the slot
+	 * @return the result
+	 */
+	public boolean isButton(int slot) {
+		// return true if item is not similar with n
+		return !design.getItem(slot).isSimilar(n);
 	}
 
 	public static class ButtonClickEvent extends Event implements Cancellable {
