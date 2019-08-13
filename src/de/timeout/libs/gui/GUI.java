@@ -143,6 +143,26 @@ public class GUI implements Listener {
 	}
 	
 	/**
+	 * This Method removes a button on a certain slot and updates the view of all viewers of this inventory
+	 * @param slot the slot of the button
+	 */
+	public void removeButton(int slot) {
+		// set button design to null
+		design.setItem(slot, n);
+		// remove function
+		buttons[slot] = null;
+		// update Viewer
+		openGUIs.entrySet().forEach(entry -> {
+			// if viewer view on this gui
+			if(entry.getValue().getUniqueID().toString().equalsIgnoreCase(this.uniqueID.toString())) {
+				// update changes to all players, which see the button removal
+				entry.getKey().closeInventory();
+				entry.getKey().openInventory(this.design);
+			}
+		});
+	}
+	
+	/**
 	 * This Methods shows, if the Entity has open a GUI right now.
 	 * 
 	 * @param entity the Entity
