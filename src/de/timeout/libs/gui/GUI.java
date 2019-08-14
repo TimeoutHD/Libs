@@ -22,13 +22,15 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import de.timeout.libs.items.ItemStackAPI;
+import net.md_5.bungee.api.ChatColor;
 
 public class GUI implements Listener {
 
-	private static final ItemStack n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, (short) 7,"&7");
 	private static final Map<HumanEntity, GUI> openGUIs = new ConcurrentHashMap<>(Bukkit.getMaxPlayers());
 	
 	private static boolean registered;
+	
+	protected final ItemStack n;
 	
 	protected UUID uniqueID;
 	protected String name;
@@ -36,6 +38,10 @@ public class GUI implements Listener {
 	protected Button[] buttons;
 	
 	public GUI(JavaPlugin main, String name, Inventory design) {
+		this(main, name, design, (short) 7);
+	}
+	
+	public GUI(JavaPlugin main, String name, Inventory design, short nColor) {
 		// Object params cannot be null
 		Validate.notNull(main, "MainClass cannot be null");
 		Validate.notNull(name, "Name cannot be null");
@@ -45,6 +51,7 @@ public class GUI implements Listener {
 		this.design = Bukkit.createInventory(null, design.getSize(), name);
 		this.buttons = new Button[design.getSize()];
 		this.uniqueID = UUID.randomUUID();
+		this.n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, nColor, ChatColor.translateAlternateColorCodes('&', "&7"));
 		
 		// put on every empty slot a n-item
 		for(int i = 0; i < design.getSize(); i++) {
@@ -75,6 +82,7 @@ public class GUI implements Listener {
 		this.design = base.getDesign();
 		this.buttons = base.getButtons();
 		this.uniqueID = UUID.randomUUID();
+		this.n = base.n;
 		
 		// if GUIs are not initialized
 		if(!registered) {
@@ -176,17 +184,13 @@ public class GUI implements Listener {
 	
 	@EventHandler
 	public void onButtonClick(InventoryClickEvent event) {
-		System.out.println("Event getriggert");
 		// If there is no null param and player uses a gui right now
 		if(event.getClickedInventory() != null && event.getCurrentItem() != null && openGUIs.containsKey(event.getWhoClicked())) {	
 			// cancel unnecesarry event
 			event.setCancelled(true);
 			// If Title is Similar to GUI
-			System.out.println("Ist eine GUI");
 			if(event.getView().getTitle().equalsIgnoreCase(openGUIs.get(event.getWhoClicked()).getName())) {
-				System.out.println("Name ist valid");
 				Button button = openGUIs.get(event.getWhoClicked()).getButtons()[event.getSlot()];
-				System.out.println(button);
 				if(button != null) {
 					ButtonClickEvent e = new ButtonClickEvent(event, button);
 					// call ButtonClickEvent
