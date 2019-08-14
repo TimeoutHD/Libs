@@ -330,8 +330,8 @@ public class GUI implements Listener {
 	public static class Button {
 		
 		private int slot;
-		private ItemStack item;
-		private Consumer<ButtonClickEvent> handler;
+		protected ItemStack item;
+		protected Consumer<ButtonClickEvent> handler;
 		
 		public Button(int slot, ItemStack item, Consumer<ButtonClickEvent> function) {
 			this.item = item;
