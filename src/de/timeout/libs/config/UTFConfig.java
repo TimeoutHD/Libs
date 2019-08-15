@@ -166,7 +166,7 @@ public class UTFConfig extends YamlConfiguration {
 					// if previous operation was deletion
 					if(previous != null && previous.operation == Operation.DELETE) {
 						List<String> insertion = new ArrayList<>(Arrays.asList(diff.text.split("\n")));
-						List<String> values = Arrays.asList(previous.text.split("\n"));
+						List<String> values = new ArrayList<>(Arrays.asList(previous.text.split("\n")));
 							
 						for(int i = 0; i < insertion.size(); i++) {
 							// if line is a value line
@@ -196,7 +196,7 @@ public class UTFConfig extends YamlConfiguration {
 			String key = line.split(":")[0];
 			// find line with that value
 			for(int i = 0; i < values.size(); i++) {
-				if(values.get(i).split(":")[0].equals(key)) return values.get(i);
+				if(values.get(i).split(":")[0].equals(key)) return values.remove(i);
 			}
 			return line;
 		} else return values.get(0);
