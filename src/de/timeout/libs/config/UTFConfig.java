@@ -178,7 +178,7 @@ public class UTFConfig extends YamlConfiguration {
 					// An old value is about to be set in. Must be canceled
 					// set new value in old field
 					diff.text = previous.text;			
-				} // else if("'".equals(diff.text)) diff.text = "";
+				}
 			}
 			// set previous
 			previous = diff;
@@ -191,12 +191,14 @@ public class UTFConfig extends YamlConfiguration {
 	}
 	
 	private String getValue(String line, List<String> values) {
-		// get key
-		String key = line.split(":")[0];
-		// find line with that value
-		for(int i = 0; i < values.size(); i++) {
-			if(values.get(i).split(":")[0].equals(key)) return values.get(i);
-		}
-		return line;
+		if(line.contains(":") || line.trim().isEmpty() || line.trim().equals("'") || line.trim().equals("\"")) {
+			// get key
+			String key = line.split(":")[0];
+			// find line with that value
+			for(int i = 0; i < values.size(); i++) {
+				if(values.get(i).split(":")[0].equals(key)) return values.get(i);
+			}
+			return line;
+		} else return values.get(0);
 	}
 }

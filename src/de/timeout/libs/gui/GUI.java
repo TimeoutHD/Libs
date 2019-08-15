@@ -37,6 +37,11 @@ public class GUI implements Listener {
 	protected Inventory design;
 	protected Button[] buttons;
 	
+	public GUI() {
+		n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, (short) 7, ChatColor.translateAlternateColorCodes('&', "&7"));
+		uniqueID = UUID.randomUUID();
+	}
+	
 	public GUI(JavaPlugin main, String name, Inventory design) {
 		this(main, name, design, (short) 7);
 	}
@@ -126,7 +131,7 @@ public class GUI implements Listener {
 	 * 
 	 */
 	public void registerButton(int slot, Consumer<ButtonClickEvent> function) {
-		buttons[slot] = new Button(slot, design.getItem(slot), function);
+		buttons[slot] = new Button(design.getItem(slot), function);
 	}
 	
 	/**
@@ -147,7 +152,7 @@ public class GUI implements Listener {
 	 */
 	public void registerButton(int slot, ItemStack item, Consumer<ButtonClickEvent> function) {
 		design.setItem(slot, item);
-		buttons[slot] = new Button(slot, item, function);
+		buttons[slot] = new Button(item, function);
 	}
 	
 	/**
@@ -329,14 +334,16 @@ public class GUI implements Listener {
 	
 	public static class Button {
 		
-		private int slot;
 		protected ItemStack item;
 		protected Consumer<ButtonClickEvent> handler;
 		
-		public Button(int slot, ItemStack item, Consumer<ButtonClickEvent> function) {
+		public Button(ItemStack item, Consumer<ButtonClickEvent> function) {
 			this.item = item;
 			this.handler = function;
-			this.slot = slot;
+		}
+		
+		public Button() {
+			/* EMPTY FOR FUTURE INHERITATIONS */
 		}
 		
 		/**
@@ -356,14 +363,6 @@ public class GUI implements Listener {
 		 */
 		public ItemStack getDesign() {
 			return item;
-		}
-		
-		/**
-		 * This Method returns the Slot of the Button in the general GUI.
-		 * @return the Slot of the Button.
-		 */
-		public int getSlotInGUI() {
-			return slot;
 		}
 	}
 }
