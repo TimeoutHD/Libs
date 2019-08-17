@@ -37,9 +37,16 @@ public class GUI implements Listener {
 	protected Inventory design;
 	protected Button[] buttons;
 	
-	public GUI() {
+	public GUI(JavaPlugin main) {
 		n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, (short) 7, ChatColor.translateAlternateColorCodes('&', "&7"));
 		uniqueID = UUID.randomUUID();
+		// if GUIs are not initialized
+		if(!registered) {
+			// register Click-Listener
+			Bukkit.getPluginManager().registerEvents(this, main);
+			// change register to true
+			registered = true;
+		}
 	}
 	
 	public GUI(JavaPlugin main, String name, Inventory design) {
@@ -49,11 +56,10 @@ public class GUI implements Listener {
 	public GUI(JavaPlugin main, String name, Inventory design, short nColor) {
 		// Object params cannot be null
 		Validate.notNull(main, "MainClass cannot be null");
-		Validate.notNull(name, "Name cannot be null");
 		Validate.notNull(design, "Design cannot be null");
 		
 		this.name = name;
-		this.design = Bukkit.createInventory(null, design.getSize(), name);
+		this.design = Bukkit.createInventory(null, design.getSize(), name != null ? name : "");
 		this.buttons = new Button[design.getSize()];
 		this.uniqueID = UUID.randomUUID();
 		this.n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, nColor, ChatColor.translateAlternateColorCodes('&', "&7"));
@@ -189,8 +195,10 @@ public class GUI implements Listener {
 	
 	@EventHandler
 	public void onButtonClick(InventoryClickEvent event) {
+		System.out.println("Triggert");
 		// If there is no null param and player uses a gui right now
 		if(event.getClickedInventory() != null && event.getCurrentItem() != null && openGUIs.containsKey(event.getWhoClicked())) {	
+			System.out.println("Ist GUI, cancel");
 			// cancel unnecesarry event
 			event.setCancelled(true);
 			// If Title is Similar to GUI
