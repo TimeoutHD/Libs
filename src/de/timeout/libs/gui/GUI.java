@@ -195,10 +195,8 @@ public class GUI implements Listener {
 	
 	@EventHandler
 	public void onButtonClick(InventoryClickEvent event) {
-		System.out.println("Triggert");
 		// If there is no null param and player uses a gui right now
 		if(event.getClickedInventory() != null && event.getCurrentItem() != null && openGUIs.containsKey(event.getWhoClicked())) {	
-			System.out.println("Ist GUI, cancel");
 			// cancel unnecesarry event
 			event.setCancelled(true);
 			// If Title is Similar to GUI
