@@ -3,6 +3,7 @@ package de.timeout.libs.items;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -17,9 +18,14 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 
+import de.timeout.libs.Reflections;
 import net.md_5.bungee.api.ChatColor;
 
 public final class ItemStackAPI {
+	
+	private static final Class<?> itemClass = Reflections.getNMSClass("Item");
+	private static final Class<?> itemstackClass = Reflections.getNMSClass("ItemStack");
+	private static final Class<?> craftitemstackClass = Reflections.getCraftBukkitClass("inventory.CraftItemStack");
 	
 	private ItemStackAPI() {
 		// No need for Util-Class to create an Object
@@ -185,5 +191,20 @@ public final class ItemStackAPI {
 			Bukkit.getLogger().log(Level.SEVERE, "Could not create Object", e);
 		}
 		return null;
+	}
+	
+	public static String getCustomizedName(ItemStack itemStack) {
+		// return displayname if item has one
+		if(itemStack.hasItemMeta() && itemStack.getItemMeta().hasDisplayName()) return itemStack.getItemMeta().getDisplayName();
+		try {
+			// else get right name
+			Object nmsItemStack = craftitemstackClass.getMethod("asNMSCopy", ItemStack.class);
+			Object nmsItem = craftitemstackClass.getMethod("getItem").invoke(nmsItemStack);
+			// return name
+			return (String) itemClass.getMethod("a", itemstackClass).invoke(nmsItem, nmsItemStack);
+		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Cannot get Item");
+		}
+		return itemStack.getType().toString();
 	}
 }

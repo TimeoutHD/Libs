@@ -233,7 +233,6 @@ public class GUI implements Listener {
 	 */
 	public void openGUI(HumanEntity player) {
 		Validate.notNull(player, "The Player cannot be null");
-		openGUIs.remove(player);
 		player.openInventory(design);
 		openGUIs.put(player, this);
 	}
@@ -243,6 +242,7 @@ public class GUI implements Listener {
 		openGUIs.keySet().forEach(p -> {
 			// If player has this gui open.
 			if(openGUIs.get(p).getUniqueID().toString().equalsIgnoreCase(this.uniqueID.toString())) {
+				
 				// close it
 				p.closeInventory();
 				// remove him from HashMap
@@ -284,7 +284,7 @@ public class GUI implements Listener {
 		
 		@Override
 		public HandlerList getHandlers() {
-			return handlers;
+			return getHandlerList();
 		}
 		
 		public static HandlerList getHandlerList() {
