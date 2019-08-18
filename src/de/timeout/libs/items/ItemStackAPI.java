@@ -7,6 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -121,6 +122,19 @@ public final class ItemStackAPI {
 			// set new ItemMeta
 			item.setItemMeta(meta);
 		} else throw new IllegalArgumentException("Level must be a positive integer");
+		// return item
+		return item;
+	}
+	
+	/**
+	 * This method adds an Enchantment to an ItemStack
+	 * @param item the ItemStack
+	 * @param enchantments a map with the enchantment and their level
+	 * @return the item
+	 */
+	public static ItemStack addEnchantments(ItemStack item, Map<Enchantment, Integer> enchantments) {
+		// Add enchantments
+		enchantments.entrySet().forEach(entry -> ItemStackAPI.addEnchantment(item, entry.getKey(), entry.getValue()));
 		// return item
 		return item;
 	}
