@@ -21,6 +21,13 @@ import org.bukkit.util.io.BukkitObjectOutputStream;
 import de.timeout.libs.Reflections;
 import net.md_5.bungee.api.ChatColor;
 
+/**
+ * Verbesserungsidee:
+ * - ItemStackBuilder in Form von StringBuilder
+ * 
+ * @author timeout
+ *
+ */
 public final class ItemStackAPI {
 	
 	private static final Class<?> itemClass = Reflections.getNMSClass("Item");
@@ -104,7 +111,7 @@ public final class ItemStackAPI {
 	 * @param level the level
 	 * @throws IllegalArgumentException if the level is negative or 0
 	 */
-	public static void addEnchantment(ItemStack item, Enchantment enchantment, int level) {
+	public static ItemStack addEnchantment(ItemStack item, Enchantment enchantment, int level) {
 		// level must be positive
 		if(level > 0) {
 			// get ItemMeta
@@ -114,19 +121,23 @@ public final class ItemStackAPI {
 			// set new ItemMeta
 			item.setItemMeta(meta);
 		} else throw new IllegalArgumentException("Level must be a positive integer");
+		// return item
+		return item;
 	}
 	
 	/**
 	 * This method hides all Enchantments on an ItemStack
 	 * @param item the itemstack
 	 */
-	public static void hideEnchantments(ItemStack item) {
+	public static ItemStack hideEnchantments(ItemStack item) {
 		// get ItemMeta
 		ItemMeta meta = item.getItemMeta();
 		// hide enchantments
 		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 		// set itemMeta
 		item.setItemMeta(meta);
+		// return itemstack
+		return item;
 	}
 	
 	/**
@@ -134,8 +145,8 @@ public final class ItemStackAPI {
 	 * @param item the itemstack
 	 * @param lines the lore as Strings
 	 */
-	public static void setLore(ItemStack item, String... lines) {
-		setLore(item, Arrays.asList(lines));
+	public static ItemStack setLore(ItemStack item, String... lines) {
+		return setLore(item, Arrays.asList(lines));
 	}
 	
 	/**
@@ -143,7 +154,7 @@ public final class ItemStackAPI {
 	 * @param item the itemstack
 	 * @param lore the lore as list
 	 */
-	public static void setLore(ItemStack item, List<String> lore) {
+	public static ItemStack setLore(ItemStack item, List<String> lore) {
 		// Apply ColorCode
 		for(int i = 0; i < lore.size(); i++)
 			if(lore.get(i) != null) lore.set(i, ChatColor.translateAlternateColorCodes('&', lore.get(i)));
@@ -154,6 +165,8 @@ public final class ItemStackAPI {
 		meta.setLore(lore);
 		// Set ItemMeta
 		item.setItemMeta(meta);
+		// return item
+		return item;
 	}
 	
 	/**

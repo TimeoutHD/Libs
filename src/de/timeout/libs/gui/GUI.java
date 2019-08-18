@@ -24,6 +24,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import de.timeout.libs.items.ItemStackAPI;
 import net.md_5.bungee.api.ChatColor;
 
+/**
+ * Verbesserungsideen:
+ * - variabler Name als Methoden
+ * - name field entfernen (mit InventoryTitle vertauschen)
+ * 
+ * @author timeout
+ *
+ */
 public class GUI implements Listener {
 
 	private static final Map<HumanEntity, GUI> openGUIs = new ConcurrentHashMap<>(Bukkit.getMaxPlayers());
