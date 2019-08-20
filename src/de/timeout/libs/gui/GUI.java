@@ -178,15 +178,8 @@ public class GUI implements Listener {
 		design.setItem(slot, n);
 		// remove function
 		buttons[slot] = null;
-		// update Viewer
-		openGUIs.entrySet().forEach(entry -> {
-			// if viewer view on this gui
-			if(entry.getValue().getUniqueID().toString().equalsIgnoreCase(this.uniqueID.toString())) {
-				// update changes to all players, which see the button removal
-				entry.getKey().closeInventory();
-				entry.getKey().openInventory(this.design);
-			}
-		});
+		// update gui
+		updateGUI();
 	}
 	
 	/**
@@ -249,14 +242,23 @@ public class GUI implements Listener {
 		// for each player
 		openGUIs.keySet().forEach(p -> {
 			// If player has this gui open.
-			if(openGUIs.get(p).getUniqueID().toString().equalsIgnoreCase(this.uniqueID.toString())) {
-				
+			if(openGUIs.get(p).getUniqueID().toString().equals(this.uniqueID.toString())) {	
 				// close it
 				p.closeInventory();
 				// remove him from HashMap
 				openGUIs.remove(p);
 			}
 		});
+	}
+	
+	/**
+	 * This Method updates the GUI-Instance for every visible player
+	 */
+	public void updateGUI() {
+		// filter all players with this gui open and open it again to update
+		openGUIs.entrySet().stream()
+			.filter(entry -> openGUIs.get(entry.getKey()).getUniqueID().toString().equals(this.uniqueID.toString()))
+			.forEach(entry -> entry.getValue().openGUI(entry.getKey()));
 	}
 	
 	public String getName() {
