@@ -178,7 +178,18 @@ public class MySQL {
 			for(Column column : columns)
 				if(column.getName().equalsIgnoreCase(columnName)) return column.getValue(index);
 			
-			throw new IllegalArgumentException("Could not find Column " + columnName);
+			throw new IllegalArgumentException("Could not find Column " + columnName + ". Valid columns are " + getColumnNames());
+		}
+		
+		/**
+		 * This Method returns a line of valid Column-Names
+		 * @return the columnnames
+		 */
+		private String getColumnNames() {
+			StringBuilder builder = new StringBuilder();
+			for(int i = 0; i < columns.length -1; i++) builder.append(columns[i].getName() + ", ");
+			builder.append(columns[columns.length -1].getName());
+			return builder.toString();
 		}
 		
 		/**

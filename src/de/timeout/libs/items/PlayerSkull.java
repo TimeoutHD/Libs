@@ -189,6 +189,30 @@ public class PlayerSkull extends ItemStack {
 		}
 
 		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((skull == null) ? 0 : skull.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			SkullChangeScheduler other = (SkullChangeScheduler) obj;
+			if (skull == null) {
+				if (other.skull != null)
+					return false;
+			} else if (!skull.equals(other.skull)) return false;
+			return true;
+		}
+
+		@Override
 		public void run() {
 			// Get full GameProfile from Owner
 			GameProfile profile = getProfile();

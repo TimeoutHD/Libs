@@ -221,7 +221,12 @@ public class GUI implements Listener {
 	
 	@EventHandler
 	public void onClose(InventoryCloseEvent event) {
-		openGUIs.remove(event.getPlayer());
+		// get gui
+		GUI gui = openGUIs.remove(event.getPlayer());
+		// create Event
+		GUICloseEvent guiCloseEvent = new GUICloseEvent(event.getPlayer(), gui, event);
+		// call event
+		Bukkit.getPluginManager().callEvent(guiCloseEvent);
 	}
 	
 	/**
@@ -345,6 +350,42 @@ public class GUI implements Listener {
 		 */
 		public Button getButton() {
 			return button;
+		}
+	}
+	
+	public static class GUICloseEvent extends Event {
+		
+		private static final HandlerList handlers = new HandlerList();
+		
+		private HumanEntity player;
+		private GUI closedGUI;
+		private InventoryCloseEvent closeEvent;
+
+		public GUICloseEvent(HumanEntity player, GUI closedGUI, InventoryCloseEvent closeEvent) {
+			this.player = player;
+			this.closedGUI = closedGUI;
+			this.closeEvent = closeEvent;
+		}
+		
+		public static HandlerList getHandlerList() {
+			return handlers;
+		}
+
+		@Override
+		public HandlerList getHandlers() {
+			return getHandlerList();
+		}
+
+		public HumanEntity getPlayer() {
+			return player;
+		}
+
+		public GUI getClosedGUI() {
+			return closedGUI;
+		}
+
+		public InventoryCloseEvent getCloseEvent() {
+			return closeEvent;
 		}
 	}
 	
