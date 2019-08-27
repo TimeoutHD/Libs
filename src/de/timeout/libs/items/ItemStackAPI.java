@@ -38,6 +38,7 @@ public final class ItemStackAPI {
 	
 	private static final String AS_NMS_COPY = "asNMSCopy";
 	private static final String HAS_TAG = "hasTag";
+	private static final String HAS_KEY = "hasKey";
 	private static final String GET_TAG = "getTag";
 	
 	private static final String ERROR_NO_NBT_TAG = "ItemStack has no NBT-Tag";
@@ -254,7 +255,7 @@ public final class ItemStackAPI {
 				// get Compound
 				Object compound = itemstackClass.getMethod(GET_TAG).invoke(nmsCopy);
 				// return if kex exist
-				return (boolean) nbttagcompoundClass.getMethod(HAS_TAG, String.class).invoke(compound, key);
+				return (boolean) nbttagcompoundClass.getMethod(HAS_KEY, String.class).invoke(compound, key);
 			}
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
 				| SecurityException e) {
