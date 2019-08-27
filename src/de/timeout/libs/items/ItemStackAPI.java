@@ -102,7 +102,7 @@ public final class ItemStackAPI {
 	public static ItemStack createItemStack(Material material, int amount) {
 		return createItemStack(material, amount, null);
 	}
-	
+		
 	/**
 	 * This method creates an ItemStack without a displayname
 	 * @param material the material of the itemstack

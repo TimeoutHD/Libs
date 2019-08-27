@@ -223,10 +223,13 @@ public class GUI implements Listener {
 	public void onClose(InventoryCloseEvent event) {
 		// get gui
 		GUI gui = openGUIs.remove(event.getPlayer());
-		// create Event
-		GUICloseEvent guiCloseEvent = new GUICloseEvent(event.getPlayer(), gui, event);
-		// call event
-		Bukkit.getPluginManager().callEvent(guiCloseEvent);
+		// if player had an gui open
+		if(gui != null) {
+			// create Event
+			GUICloseEvent guiCloseEvent = new GUICloseEvent(event.getPlayer(), gui, event);
+			// call event
+			Bukkit.getPluginManager().callEvent(guiCloseEvent);
+		}
 	}
 	
 	/**
