@@ -234,7 +234,7 @@ public final class ItemStackAPI {
 		try {
 			// else get right name
 			Object nmsItemStack = craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, itemStack);
-			Object nmsItem = craftitemstackClass.getMethod("getItem").invoke(nmsItemStack);
+			Object nmsItem = itemstackClass.getMethod("getItem").invoke(nmsItemStack);
 			// return name
 			return (String) itemClass.getMethod("a", itemstackClass).invoke(nmsItem, nmsItemStack);
 		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
