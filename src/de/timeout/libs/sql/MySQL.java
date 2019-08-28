@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang.Validate;
+
 /**
  * This Class is a Hook into the MySQL-Database
  * @author timeout
@@ -331,16 +333,15 @@ public class MySQL {
 		 * @throws IllegalStateException if the column cannot be found
 		 */
 		public String getValue(String columnName) {
-			if(columnName != null) {
-				int i;
-				for(i = 0; i < columnNames.length; i++) {
-					if(!columnName.equalsIgnoreCase(columnNames[i]) && (i == columnNames.length -1)) {
-						throw new IllegalStateException("Cannot find Column " + columnName);
-					} else if(columnName.equalsIgnoreCase(columnName)) break;
-				}
-				
-				return values[i];
-			} else throw new IllegalArgumentException("columnName cannot be null");
+			// validate
+			Validate.notNull(columnName, "columnName cannot be null");
+			// for every column in row
+			for(int i = 0; i < columnNames.length; i++) {
+				// if column is found return value
+				if(columnName.equals(columnNames[i])) return values[i];
+			}
+			// column cannot be found
+			throw new IllegalStateException("Cannot find Column " + columnName);
 		}
 		
 		/**
