@@ -93,7 +93,7 @@ public class MySQL {
 		if(statement != null) {
 			//Do not close this Statement here!!
 			PreparedStatement ps = connection.prepareStatement(statement);
-			for(int i = 0; i < args.length; i++) ps.setObject(i +1, args[i]);
+			for(int i = 0; i < args.length; i++) ps.setString(i +1, args[i]);
 			return ps;
 		} else throw new IllegalArgumentException("Statement cannot be null");
 	}
