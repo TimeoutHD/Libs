@@ -72,6 +72,8 @@ public class GUI implements Listener {
 		
 		// put on every empty slot a n-item
 		this.design.setContents(design.getContents());
+		for(int i = 0; i < this.design.getSize(); i++)
+			if(this.design.getItem(i) == null) this.design.setItem(i, n);
 		
 		// if GUIs are not initialized
 		if(!registered) {
@@ -194,16 +196,13 @@ public class GUI implements Listener {
 		if(event.getClickedInventory() != null && event.getCurrentItem() != null && openGUIs.containsKey(event.getWhoClicked())) {	
 			// cancel unnecesarry event
 			event.setCancelled(true);
-			// If Title is Similar to GUI
-			if(event.getView().getTitle().equalsIgnoreCase(openGUIs.get(event.getWhoClicked()).getName())) {
-				Button button = openGUIs.get(event.getWhoClicked()).getButtons()[event.getSlot()];
-				if(button != null) {
-					ButtonClickEvent e = new ButtonClickEvent(event, button);
-					// call ButtonClickEvent
-					Bukkit.getServer().getPluginManager().callEvent(e);
-					// execute function if event is not cancelled
-					if(!e.isCancelled())button.click(e);
-				}
+			Button button = openGUIs.get(event.getWhoClicked()).getButtons()[event.getSlot()];
+			if(button != null) {
+				ButtonClickEvent e = new ButtonClickEvent(event, button);
+				// call ButtonClickEvent
+				Bukkit.getServer().getPluginManager().callEvent(e);
+				// execute function if event is not cancelled
+				if(!e.isCancelled())button.click(e);
 			}
 		}
 	}
