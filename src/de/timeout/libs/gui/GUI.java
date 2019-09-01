@@ -41,7 +41,6 @@ public class GUI implements Listener {
 	protected final ItemStack n;
 	
 	protected UUID uniqueID;
-	protected String name;
 	protected Inventory design;
 	protected Button[] buttons;
 	
@@ -66,17 +65,13 @@ public class GUI implements Listener {
 		Validate.notNull(main, "MainClass cannot be null");
 		Validate.notNull(design, "Design cannot be null");
 		
-		this.name = name;
 		this.design = Bukkit.createInventory(null, design.getSize(), name != null ? name : "");
 		this.buttons = new Button[design.getSize()];
 		this.uniqueID = UUID.randomUUID();
 		this.n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, nColor, ChatColor.translateAlternateColorCodes('&', "&7"));
 		
 		// put on every empty slot a n-item
-		for(int i = 0; i < design.getSize(); i++) {
-			if(design.getItem(i) == null) this.design.setItem(i, n);
-			else this.design.setItem(i, design.getItem(i));
-		}
+		this.design.setContents(design.getContents());
 		
 		// if GUIs are not initialized
 		if(!registered) {
@@ -97,7 +92,6 @@ public class GUI implements Listener {
 		Validate.notNull(base, "Base-GUI cannot be null");
 		
 		// set Values
-		this.name = base.getName();
 		this.design = base.getDesign();
 		this.buttons = base.getButtons();
 		this.uniqueID = UUID.randomUUID();
@@ -270,7 +264,7 @@ public class GUI implements Listener {
 	}
 	
 	public String getName() {
-		return name;
+		return design.getName();
 	}
 	
 	public UUID getUniqueID() {

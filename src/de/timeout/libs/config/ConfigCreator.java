@@ -15,7 +15,7 @@ import net.md_5.bungee.api.ChatColor;
 
 public class ConfigCreator {
 
-	private static final String CONFIG_LOADED = ChatColor.translateAlternateColorCodes('&', "&8[&aOut-Configuration&8] &a%f &f is loaded &asucessful.");
+	private static final String CONFIG_LOADED = ChatColor.translateAlternateColorCodes('&', "&8[&aOut-Configuration&8] &a%f &f is loaded &asucessfully.");
 	private static final String CONFIG_GENERATE = ChatColor.translateAlternateColorCodes('&', "&8[&aOut-Configuration&8] &a%f &7could not be found: &aGenerate...");
 	
 	private JavaPlugin main;
