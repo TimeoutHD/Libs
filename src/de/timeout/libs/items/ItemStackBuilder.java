@@ -4,6 +4,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.logging.Level;
 
+import javax.annotation.Nonnegative;
+
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -62,6 +64,12 @@ public class ItemStackBuilder {
 		return this;
 	}
 	
+	/**
+	 * This Method add an Enchantment to the Item with a certain level
+	 * @param enchantment the Enchantment
+	 * @param level the level
+	 * @return the builder to continue
+	 */
 	public ItemStackBuilder addEnchantment(Enchantment enchantment, int level) {
 		// set enchantment
 		ItemStackAPI.addEnchantment(currentBuilding, enchantment, level);
@@ -69,6 +77,11 @@ public class ItemStackBuilder {
 		return this;
 	}
 	
+	/**
+	 * This Method removes an Enchantment from the Item
+	 * @param enchantment the Enchant you want to remove
+	 * @return the builder to continue
+	 */
 	public ItemStackBuilder removeEnchantment(Enchantment enchantment) {
 		// remove enchantment
 		ItemMeta meta = currentBuilding.getItemMeta();
@@ -78,6 +91,11 @@ public class ItemStackBuilder {
 		return this;
 	}
 	
+	/**
+	 * This Method sets the Lore of the Item
+	 * @param lore the Lore you want to set
+	 * @return the builder to continue
+	 */
 	public ItemStackBuilder setLore(List<String> lore) {
 		// Set Lore for currentBuilding
 		ItemStackAPI.setLore(currentBuilding, lore);
@@ -85,6 +103,11 @@ public class ItemStackBuilder {
 		return this;
 	}
 	
+	/**
+	 * This Method hides all enchantments in the lore
+	 * @param result a bool which answers if you want to hide the enchantments. true means the enchantments will be hidden, false otherwise
+	 * @return the builder to continue
+	 */
 	public ItemStackBuilder hideEnchantments(boolean result) {
 		// get Meta
 		ItemMeta meta = currentBuilding.getItemMeta();
@@ -97,6 +120,25 @@ public class ItemStackBuilder {
 		return this;
 	}
 	
+	/**
+	 * This Method set the amount of the Item. The amount must be positive. 
+	 * @param amount the amount
+	 * @return the builder to continue
+	 * @throws IllegalArgumentException if the amount is negative
+	 */
+	public ItemStackBuilder setAmount(@Nonnegative int amount) {
+		// set Amount
+		currentBuilding.setAmount(amount);
+		// returng this to continue
+		return this;
+	}
+	
+	/**
+	 * This Method writes the NBT-Tag with an Int as value in a certain key
+	 * @param key the key of the tag
+	 * @param value the value you want to write in this key
+	 * @return the builder to continue
+	 */
 	public ItemStackBuilder writeNBTInt(String key, int value) {
 		try {
 			// create nms-copy
@@ -117,6 +159,12 @@ public class ItemStackBuilder {
 		return this;
 	}
 	
+	/**
+	 * This Method writes the NBT-Tag with an Boolean as value in a certain key
+	 * @param key the key of the tag
+	 * @param value the value you want to write in this key
+	 * @return the builder to continue
+	 */
 	public ItemStackBuilder writeNBTBoolean(String key, boolean value) {
 		try {
 			// create nms-copy
@@ -137,6 +185,12 @@ public class ItemStackBuilder {
 		return this;
 	}
 	
+	/**
+	 * This Method writes the NBT-Tag with an String as value in a certain key
+	 * @param key the key of the tag
+	 * @param value the value you want to write in this key
+	 * @return the builder to continue
+	 */
 	public ItemStackBuilder writeNBTString(String key, String value) {
 		try {
 			// create nms-copy
