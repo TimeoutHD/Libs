@@ -4,8 +4,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.logging.Level;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -18,6 +20,28 @@ public final class Reflections {
 	private static final Class<?> packetClass = getNMSClass("Packet");
 	
 	private Reflections() {}
+	
+	public static Field getField(Class<?> clazz, String... names) {
+		// if names is not empty
+		if(names.length != 0) {
+			try {
+				// get Field and set executable
+				Field field = clazz.getDeclaredField(names[0]);
+				field.setAccessible(true);
+				
+				// change modifier fields
+				if(Modifier.isFinal(field.getModifiers())) modifiers.set(field, field.getModifiers() & ~Modifier.FINAL);
+				// return field
+				return field;
+			} catch (NoSuchFieldException e) {
+				// Field not found recursive execute without first element
+				return getField(clazz, ArrayUtils.subarray(names, 1, names.length));
+			} catch(IllegalArgumentException | SecurityException | IllegalAccessException e) {
+				Bukkit.getLogger().log(Level.SEVERE, "Cannot get checked fields " + Arrays.toString(names) + " in Class " + clazz.getName(), e);
+			}
+			return null;
+		} else return null;
+	}
 
 	/**
 	 * This method creates a Field which is linked to the fieldname in your class. The field is modifiable.
