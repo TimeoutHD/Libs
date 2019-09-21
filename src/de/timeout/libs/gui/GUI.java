@@ -81,6 +81,21 @@ public class GUI {
 		this(main, name, design, (short) 7);
 	}
 	
+	public GUI(String name, Inventory design) {
+		this();
+		// Validate
+		Validate.notNull(design, "Design cannot be null");
+		// create new Inventory
+		this.design = Bukkit.createInventory(null, design.getSize(), name);
+		// copy contents
+		for(int i = 0; i < this.design.getSize(); i++) {
+			// get ItemStack
+			ItemStack item = design.getItem(i);
+			// set item in new design or n if there is no item
+			this.design.setItem(i, item != null ? item : n);
+		}
+	}
+	
 	public GUI(Inventory design, @Nonnegative short nColor) {
 		this();
 		// Validate
@@ -92,9 +107,9 @@ public class GUI {
 		// initialize design
 		for(int i = 0; i < this.design.getSize(); i++) {
 			// get ItemStack
-			ItemStack item = this.design.getItem(i);
+			ItemStack item = design.getItem(i);
 			// set to n if item is null.
-			if(item == null) this.design.setItem(i, n);
+			this.design.setItem(i, item != null ? item : n);
 		}
 
 	}
@@ -147,6 +162,27 @@ public class GUI {
 	}
 	
 	/**
+	 * This method returns an array with all buttons. The index is the correct position of this button. 
+	 * If there is no button the element will be null
+	 * @return an array of the size of the gui which contains all buttons in the right index or null if there is no button in that index
+	 * @deprecated Buttons inheritages ItemStack now. This method is not necessary
+	 */
+	@Deprecated
+	public Button[] getButtons() {
+		// create new array
+		Button[] buttons = new Button[design.getSize()];
+		// for each itemstack in inventory
+		for(int i = 0; i < design.getSize(); i++) {
+			// get ItemStack
+			ItemStack item = design.getItem(i);
+			// add to cache if item is a button, else add null
+			buttons[i] = item instanceof Button ? (Button) item : null;
+		}
+		// return buttons
+		return buttons;
+	}
+	
+	/**
 	 * This method creates a new button on a certain position without changing the design at this position.
 	 * @param slot the slot of this button
 	 * @param click the action what will happen when a player clicks on it.
@@ -182,7 +218,7 @@ public class GUI {
 	 * });
 	 * </code>
 	 */
-	public void registerButton(ItemStack design, int slot, Consumer<ButtonClickEvent> click) {
+	public void registerButton(int slot, ItemStack design, Consumer<ButtonClickEvent> click) {
 		// Validate
 		Validate.notNull(design, "The design of the button cannot be null");
 		if(slot < 0 || slot >= this.design.getSize()) throw new IllegalArgumentException("slot must be in range of the gui slots");

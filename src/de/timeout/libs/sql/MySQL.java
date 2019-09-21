@@ -8,8 +8,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
+import org.bukkit.Bukkit;
 
 /**
  * This Class is a Hook into the MySQL-Database
@@ -17,8 +21,9 @@ import org.apache.commons.lang.Validate;
  *
  */
 public class MySQL {
-
-	private String host, database;
+	
+	private String host;
+	private String database;
 	private int port;
 	
 	private Connection connection;
@@ -39,7 +44,7 @@ public class MySQL {
 	 */
 	public boolean connect(String username, String password) throws SQLException {
 		if(!isConnected()) {
-			// Bungeecord manage Driver-initialization -> not necessary
+			// Bungeecord / Bukkit manage Driver-initialization -> not necessary. Only necessary when you use this outside the Bukkit / Bungecord API
 			// DriverManager.registerDriver(new Driver());
 			connection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true&useOldAliasMetadataBehavior=true&useUnicode=true&useJDBCCompilantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", username, password);
 			return true;
@@ -123,9 +128,16 @@ public class MySQL {
 	 * @throws SQLException If there is an error in your MySQL-Statement
 	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
 	 */
-	public synchronized Table executeStatement(String statement, String... variables) throws SQLException {
+	public Future<Table> executeStatement(String statement, String... variables) throws SQLException {
 		if(isConnected()) {
-			return new Table(convertStatement(statement, variables).executeQuery());
+			return CompletableFuture.supplyAsync(() -> {
+				try {
+					return new Table(convertStatement(statement, variables).executeQuery());
+				} catch (SQLException e) {
+					Bukkit.getLogger().log(Level.SEVERE, "You have an error in your MySQL-Syntax. Please check your command", e);
+				}
+				return null;
+			});
 		} else throw new IllegalStateException("Connection is closed. Please connect to a MySQL-Database before using any statements");
 	}
 	

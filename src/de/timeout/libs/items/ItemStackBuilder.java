@@ -2,6 +2,7 @@ package de.timeout.libs.items;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 
 import javax.annotation.Nonnegative;
@@ -15,6 +16,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import de.timeout.libs.Reflections;
+import de.timeout.libs.gui.GUI.Button;
+import de.timeout.libs.gui.GUI.ButtonClickEvent;
 
 public class ItemStackBuilder {
 	
@@ -131,6 +134,15 @@ public class ItemStackBuilder {
 		currentBuilding.setAmount(amount);
 		// returng this to continue
 		return this;
+	}
+	
+	/**
+	 * This methoc returns the actual building itemstack converted in a button
+	 * @param click what happens if a player clicks the button
+	 * @return the button with the design of this building item
+	 */
+	public Button toButton(Consumer<ButtonClickEvent> click) {
+		return new Button(currentBuilding, click);
 	}
 	
 	/**
