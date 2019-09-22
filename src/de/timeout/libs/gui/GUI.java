@@ -1,5 +1,6 @@
 package de.timeout.libs.gui;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -22,10 +23,13 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import com.google.common.collect.Lists;
 
 import de.timeout.libs.items.ItemStackAPI;
 import net.md_5.bungee.api.ChatColor;
@@ -44,10 +48,13 @@ public class GUI {
 	protected UUID uniqueID;
 	protected Inventory design;
 	
+	// it is not possible to storage more than NMS-Tags in ItemStacks...
+	protected List<Consumer<ButtonClickEvent>> functions;
+	
 	/**
 	 * This constructor creates a new GUI without a design
 	 */
-	public GUI() {
+	protected GUI() {
 		this((JavaPlugin) Bukkit.getPluginManager().getPlugins()[0]);
 	}
 	
@@ -73,7 +80,7 @@ public class GUI {
 	 * @param design
 	 */
 	public GUI(Inventory design) {
-		this(design, (short) 7);
+		this(null, design, (short) 7);
 	}
 	
 	@Deprecated
@@ -82,36 +89,31 @@ public class GUI {
 	}
 	
 	public GUI(String name, Inventory design) {
-		this();
-		// Validate
-		Validate.notNull(design, "Design cannot be null");
-		// create new Inventory
-		this.design = Bukkit.createInventory(null, design.getSize(), name);
-		// copy contents
-		for(int i = 0; i < this.design.getSize(); i++) {
-			// get ItemStack
-			ItemStack item = design.getItem(i);
-			// set item in new design or n if there is no item
-			this.design.setItem(i, item != null ? item : n);
-		}
+		this(name, design, (short) 7);
 	}
 	
 	public GUI(Inventory design, @Nonnegative short nColor) {
+		this(null, design, nColor);
+	}
+	
+	public GUI(String name, Inventory design, @Nonnegative short nColor) {
 		this();
 		// Validate
 		Validate.notNull(design, "Inventory-Design cannot be null");
 		// reinitialize n
 		this.n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, nColor, ChatColor.translateAlternateColorCodes('&', "&7"));
-		// initialize design
-		this.design = Bukkit.createInventory(null, design.getSize(), design.getTitle());
-		// initialize design
+		// initialize design and slot for Buttons
+		this.design = Bukkit.createInventory(null, design.getSize(), name != null ? name : design.getTitle());
+		functions = new ArrayList<>(design.getSize());
+		// apply design
 		for(int i = 0; i < this.design.getSize(); i++) {
+			// add placeholder for function
+			functions.add(null);
 			// get ItemStack
 			ItemStack item = design.getItem(i);
 			// set to n if item is null.
 			this.design.setItem(i, item != null ? item : n);
 		}
-
 	}
 	
 	@Deprecated
@@ -121,10 +123,13 @@ public class GUI {
 		Validate.notNull(design, "Inventory-Design cannot be null");
 		// reinitialize n
 		this.n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, nColor, ChatColor.translateAlternateColorCodes('&', "&7"));
-		// initialite design
+		// initialite design and slot for buttons
 		this.design = Bukkit.createInventory(null, design.getSize(), name != null ? name : design.getTitle());
+		functions = new ArrayList<>(design.getSize());
 		// initialize design
 		for(int i = 0; i < this.design.getSize(); i++) {
+			// add placeholder for function
+			functions.add(null);
 			// get ItemStack
 			ItemStack item = this.design.getItem(i);
 			// set to n if item is null.
@@ -165,9 +170,7 @@ public class GUI {
 	 * This method returns an array with all buttons. The index is the correct position of this button. 
 	 * If there is no button the element will be null
 	 * @return an array of the size of the gui which contains all buttons in the right index or null if there is no button in that index
-	 * @deprecated Buttons inheritages ItemStack now. This method is not necessary
 	 */
-	@Deprecated
 	public Button[] getButtons() {
 		// create new array
 		Button[] buttons = new Button[design.getSize()];
@@ -175,8 +178,10 @@ public class GUI {
 		for(int i = 0; i < design.getSize(); i++) {
 			// get ItemStack
 			ItemStack item = design.getItem(i);
+			// get Consumer
+			Consumer<ButtonClickEvent> click = functions.get(i);
 			// add to cache if item is a button, else add null
-			buttons[i] = item instanceof Button ? (Button) item : null;
+			buttons[i] = click != null ? new Button(item, click) : null;
 		}
 		// return buttons
 		return buttons;
@@ -200,6 +205,8 @@ public class GUI {
 		if(slot < 0 || slot >= this.design.getSize()) throw new IllegalArgumentException("slot must be in range of the gui slots");
 		// set new button
 		this.design.setItem(slot, new Button(this.design.getItem(slot), click));
+		// cache click in storage
+		functions.set(slot, click);
 	}
 	
 	/**
@@ -224,6 +231,8 @@ public class GUI {
 		if(slot < 0 || slot >= this.design.getSize()) throw new IllegalArgumentException("slot must be in range of the gui slots");
 		// set new button
 		this.design.setItem(slot, new Button(design, click));
+		// cache click in storage
+		functions.set(slot, click);
 	}
 	
 	public void removeButton(int slot) {
@@ -231,25 +240,32 @@ public class GUI {
 		if(slot < 0 || slot >= this.design.getSize()) throw new IllegalArgumentException("slot is out of range. Maximum is allowed " + (this.design.getSize() -1));
 		// remove item
 		design.setItem(slot, n);
+		// remove function
+		functions.remove(slot);
 		// update gui
 		updateGUI();
 	}
 	
 	/**
-	 * This method returns a list of all viewers of this gui
+	 * This method returns a clonelist of all viewers of this gui
 	 * @return a list of all viewers
 	 */
 	public List<HumanEntity> getViewers() {
-		return this.design.getViewers();
+		return new ArrayList<>(this.design.getViewers());
 	}
 	
 	public void destroy() {
-		// close Inventory for every viewer
-		getViewers().forEach(HumanEntity::closeInventory);
-		// delete inventory
-		design = null;
-		n = null;
-		uniqueID = null;
+		// close can only perform in a synchronized Scheduler. See DOC: InventoryClickEvent!
+		Bukkit.getScheduler().runTask(Bukkit.getPluginManager().getPlugins()[0], () -> {
+			// close Inventory for every viewer
+			getViewers().forEach(HumanEntity::closeInventory);
+			// delete inventory
+			design = null;
+			n = null;
+			uniqueID = null;
+			functions = null;
+		});
+
 	}
 	
 	/**
@@ -274,7 +290,19 @@ public class GUI {
 	 * @return if there is a button or not
 	 */
 	public boolean isButton(int slot) {
-		return design.getItem(slot) instanceof Button;
+		return functions.get(slot) != null;
+	}
+	
+	/**
+	 * This method returns a button on a certain slot. If the Button does not exist it will return null
+	 * @param slot the slot where you are looking at
+	 * @return the button if it exists or null if it doesn't exist
+	 */
+	public Button getButton(int slot) {
+		// get Function
+		Consumer<ButtonClickEvent> click = functions.get(slot);
+		// return button if exist. Else return null
+		return click != null ? new Button(design.getItem(slot), functions.get(slot)) : null;
 	}
 	
 	/**
@@ -286,23 +314,32 @@ public class GUI {
 		
 		private static final Map<HumanEntity, GUI> activeViewers = new ConcurrentHashMap<>();
 		
+		private JavaPlugin slaveMain;
+		
 		public GUIHandler(JavaPlugin main) {
 			// Validate
 			Validate.notNull(main, "Main Class cannot be null");
+			// link main
+			slaveMain = main;
 			// register Listener in first Plugin
 			Bukkit.getPluginManager().registerEvents(this, main);
 		}
 
 		@EventHandler(priority = EventPriority.MONITOR)
 		public void onInventoryClick(InventoryClickEvent event) {
+			// get Clicked person
+			HumanEntity player = event.getWhoClicked();
+			// get GUI
+			GUI gui = activeViewers.get(event.getWhoClicked());
 			// validate
-			if(event.getClickedInventory() != null && event.getCurrentItem() != null && activeViewers.containsKey(event.getWhoClicked())) {
+			if(event.getClickedInventory() != null && event.getClickedInventory().equals(player.getOpenInventory().getTopInventory()) && 
+					event.getCurrentItem() != null && gui != null) {
 				// gui is clicked. Cancel event
 				event.setCancelled(true);
 				// if item is button
-				if(event.getCurrentItem() instanceof Button) {
+				if(gui.isButton(event.getSlot())) {
 					// get Button
-					Button button = (Button) event.getCurrentItem();
+					Button button = gui.getButton(event.getSlot());
 					// call ButtonClickEvent
 					ButtonClickEvent buttonClickEvent = new ButtonClickEvent(event, button);
 					Bukkit.getPluginManager().callEvent(buttonClickEvent);
@@ -356,10 +393,13 @@ public class GUI {
 			// validate
 			Validate.notNull(player, "Player cannot be null");
 			Validate.notNull(gUI, "GUi cannot be null");
-			// open gui
-			player.openInventory(gUI.design);
-			// cache new result
-			activeViewers.put(player, gUI);
+			// Inventories cannot be open in Main-Thread. See DOC: InventoryClickEvent!
+			Bukkit.getScheduler().runTask(slaveMain, () -> {
+				// open Inventory
+				player.openInventory(gUI.design);
+				// cache new result
+				activeViewers.put(player, gUI);
+			});
 		}
 	}
 	
