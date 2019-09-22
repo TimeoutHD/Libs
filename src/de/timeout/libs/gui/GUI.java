@@ -23,13 +23,10 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import com.google.common.collect.Lists;
 
 import de.timeout.libs.items.ItemStackAPI;
 import net.md_5.bungee.api.ChatColor;
@@ -487,6 +484,14 @@ public class GUI {
 		@Deprecated
 		public ItemStack getDesign() {
 			return this;
+		}
+		
+		/**
+		 * This Method returns the click function of the button
+		 * @return the click function
+		 */
+		public Consumer<ButtonClickEvent> getClickFunction() {
+			return consumer;
 		}
 
 		@Override

@@ -47,6 +47,57 @@ public final class ItemStackAPI {
 	private ItemStackAPI() {
 		// No need for Util-Class to create an Object
 	}
+	
+	/**
+	 * This method creates an ItemStack with subid 0 and an amount of 1
+	 * @param id the ID of the ItemStack
+	 * @return your itemstack
+	 * @deprecated Magic keys are no longer supported
+	 */
+	@Deprecated
+	public static ItemStack createItemStack(int id) {
+		return createItemStack(id, (short) 0);
+	}
+	
+	/**
+	 * This method creates an ItemStack with the amount of 1
+	 * @param id the ID of the ItemStack
+	 * @param damage the damage / subid of your itemstack
+	 * @param amount the amount of your itemstack. Can be negative, so be careful with negative values
+	 * @param displayName the name of the itemstack. ColorCodes are written with '&'
+	 * @return your itemstack
+	 * @deprecated Magic keys are no longer supported
+	 */
+	public static ItemStack createItemStack(int id, short damage) {
+		return createItemStack(id, damage, 1);
+	}
+	
+	/**
+	 * This method creates an ItemStack without a displayname
+	 * @param id the ID of the ItemStack
+	 * @param damage the damage / subid of your itemstack
+	 * @param amount the amount of your itemstack. Can be negative, so be careful with negative values
+	 * @return your itemstack
+	 * @deprecated Magic keys are no longer supported
+	 */
+	@Deprecated
+	public static ItemStack createItemStack(int id, short damage, int amount) {
+		return createItemStack(id, damage, amount, null);
+	}
+	
+	/**
+	 * This method creates an ItemStack
+	 * @param id the ID of the ItemStack
+	 * @param damage the damage / subid of your itemstack
+	 * @param amount the amount of your itemstack. Can be negative, so be careful with negative values
+	 * @param displayName the name of the itemstack. ColorCodes are written with '&'
+	 * @return your itemstack
+	 * @deprecated Magic keys are no longer supported
+	 */
+	@Deprecated
+	public static ItemStack createItemStack(int id, short damage, int amount, String displayName) {
+		return createItemStack(Material.getMaterial(id), amount, damage, displayName);
+	}
 
 	/**
 	 * This method creates an ItemStack.
@@ -62,7 +113,7 @@ public final class ItemStackAPI {
 	/**
 	 * This method creates an ItemStack
 	 * @param material the material of your ItemStack
-	 * @param amount the amount of your itemstack. Can be negative, so be carefull with negative values
+	 * @param amount the amount of your itemstack. Can be negative, so be careful with negative values
 	 * @param damage the Damage / SubID of your ItemStack
 	 * @param displayName the name of the ItemStack. ColorCodes are written with '&'
 	 * @return the itemstack

@@ -45,6 +45,16 @@ public class ItemStackBuilder {
 		this.currentBuilding = base.clone();
 	}
 	
+	@Deprecated
+	public ItemStackBuilder(int id) {
+		this.currentBuilding = ItemStackAPI.createItemStack(id);
+	}
+	
+	@Deprecated
+	public ItemStackBuilder(int id, short subid) {
+		this.currentBuilding = ItemStackAPI.createItemStack(id, subid);
+	}
+	
 	/**
 	 * This method converts the builder into an ItemStack and returns it
 	 * @return the itemstack
