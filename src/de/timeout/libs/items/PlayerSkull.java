@@ -5,22 +5,23 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.net.URL;
-import java.net.URLConnection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
-
-import javax.annotation.Nonnull;
+import java.util.regex.Pattern;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemFactory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -32,280 +33,154 @@ import net.md_5.bungee.api.ChatColor;
 
 public class PlayerSkull extends ItemStack {
 	
+	private static final Class<?> craftmetaskullClass = Reflections.getCraftBukkitClass("inventory.CraftMetaSkull");
+	private static final Field texturesField = Reflections.getField(craftmetaskullClass, "profile");
+	
 	public static final ItemStack SKELETON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 0);
 	public static final ItemStack WITHER_SKELETON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 1);
 	public static final ItemStack ZOMBIE = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 2);
 	public static final ItemStack CREEPER = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 4);
 	public static final ItemStack ENDERDRAGON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 5);
 	public static final ItemStack STEVE = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 3);
-	public static final ItemStack ALEX = new PlayerSkull("MHF_Alex");
-	public static final ItemStack BLAZE = new PlayerSkull("MHF_Blaze");
-	public static final ItemStack CAVE_SPIDER = new PlayerSkull("MHF_CaveSpider");
-	public static final ItemStack CHICKEN = new PlayerSkull("MHF_Chicken");
-	public static final ItemStack COW = new PlayerSkull("MHF_Cow");
-	public static final ItemStack ENDERMAN = new PlayerSkull("MHF_ENDERMAN");
-	public static final ItemStack GHAST = new PlayerSkull("MHF_GHAST");
-	public static final ItemStack GOLEM = new PlayerSkull("MHF_Golem");
-	public static final ItemStack HEROBRINE = new PlayerSkull("MHF_Herobrine");
-	public static final ItemStack LAVA_SLIME = new PlayerSkull("MHF_LavaSlime");
-	public static final ItemStack MUSHROOM_COW = new PlayerSkull("MHF_MushroomCow");
-	public static final ItemStack OCELOT = new PlayerSkull("MHF_Ocelot");
-	public static final ItemStack PIG = new PlayerSkull("MHF_Pig");
-	public static final ItemStack ZOMBIE_PIGMAN = new PlayerSkull("MHF_PigZombie");
-	public static final ItemStack SLIME = new PlayerSkull("MHF_Slime");
-	public static final ItemStack SPIDER = new PlayerSkull("MHF_Spider");
-	public static final ItemStack SQUID = new PlayerSkull("MHF_Squid");
-	public static final ItemStack VILLAGER = new PlayerSkull("MHF_Villager");
-	public static final ItemStack CACTUS = new PlayerSkull("MHF_Cactus");
-	public static final ItemStack CAKE = new PlayerSkull("MHF_Cake");
-	public static final ItemStack CHEST = new PlayerSkull("MHF_Cake");
-	public static final ItemStack COCONUT_BROWN = new PlayerSkull("MHF_CoconutB");
-	public static final ItemStack COCONUT_GREEN = new PlayerSkull("MHF_CoconutG");
-	public static final ItemStack MELON = new PlayerSkull("MHF_Melon");
-	public static final ItemStack OAK_LOG = new PlayerSkull("MHF_OakLog");
-	public static final ItemStack PRESENT_GREEN = new PlayerSkull("MHF_Present1");
-	public static final ItemStack PRESENT_RED = new PlayerSkull("MHF_Present2");
-	public static final ItemStack TNT_WITH_SIGN = new PlayerSkull("MHF_TNT");
-	public static final ItemStack TNT_WITHOUT_SIGN = new PlayerSkull("MHF_TNT");
-	public static final ItemStack ARROW_UP = new PlayerSkull("MHF_ArrowUp");
-	public static final ItemStack ARROW_DOWN = new PlayerSkull("MHF_ArrowDown");
-	public static final ItemStack ARROW_LEFT = new PlayerSkull("MHF_ArrowLeft");
-	public static final ItemStack ARROW_RIGHT = new PlayerSkull("MHF_ArrowRight");
-	public static final ItemStack EXCLAMATION = new PlayerSkull("MHF_Exclamation");
-	public static final ItemStack QUESTION = new PlayerSkull("MHF_Question");
-	
 	
 	// Cache to save already downloaded profiles.
 	private static final Map<UUID, GameProfile> profileCache = new ConcurrentHashMap<>();
 	
-	private GameProfile ownerProfile;
 	private OfflinePlayer owner;
+	private GameProfile profile;
 	
-	public PlayerSkull(String displayname, int amount, OfflinePlayer owner) {
-		super(ItemStackAPI.createItemStack(Material.SKULL_ITEM, amount > 0 ? amount : 1, (short) 3));
-		
-		// Set Displayname
-		ItemMeta meta = this.getItemMeta();
-		meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', displayname));
-		this.setItemMeta(meta);
-		
+	public PlayerSkull(String displayname, int amount, OfflinePlayer owner) throws InterruptedException, ExecutionException, TimeoutException {
+		super(ItemStackAPI.createItemStack(Material.SKULL_ITEM, amount > 0 ? amount : 1, (short) 3, ChatColor.translateAlternateColorCodes('&', displayname)));
 		this.owner = owner;
-		// Start new Thread asyncrously to get and write playerdata into skull.
-		startDataThread();
+		
+		Future<GameProfile> request = overrideGameProfile();
+		// get Profile
+		profile = request.get(5, TimeUnit.SECONDS);
+		// Override profile field
+		ItemMeta meta = getItemMeta();
+		Reflections.setField(texturesField, meta, profile);
+		setItemMeta(meta);
 	}
 	
-	public PlayerSkull(int amount, OfflinePlayer owner) {
+	public PlayerSkull(int amount, OfflinePlayer owner) throws InterruptedException, ExecutionException, TimeoutException {
 		this(owner.getName(), amount, owner);
 	}
 	
-	public PlayerSkull(String displayname, int amount, UUID owner) {
+	public PlayerSkull(String displayname, int amount, UUID owner) throws InterruptedException, ExecutionException, TimeoutException {
 		this(displayname, amount, Bukkit.getOfflinePlayer(owner));
 	}
 	
 	@SuppressWarnings("deprecation")
-	public PlayerSkull(String username) {
+	public PlayerSkull(String username) throws InterruptedException, ExecutionException, TimeoutException {
 		this(username, 1, Bukkit.getOfflinePlayer(username));
 	}
 	
-	/**
-	 * Start an async Thread which update the Skull after an owner-change
-	 */
-	private void startDataThread() {
-		new Thread(new SkullChangeScheduler(this)).start();
+	public GameProfile getProfile() {
+		return profile;
 	}
 
-	/*
-	 * Get a copy of this Skull's SkullMeta
-	 */
-	@Override
-	public SkullMeta getItemMeta() {
-		return (SkullMeta) super.getItemMeta();
-	}
-
-	/**
-	 * Get Owner of this Skull
-	 * @return Owner of this Skull
-	 */
-	public OfflinePlayer getOwner() {
-		return owner;
-	}
-	
-	/**
-	 * Set a new SkullOwner of this Skull
-	 * @param player the new Owner
-	 */
-	public void setOwner(OfflinePlayer player) {
-		this.owner = player;
-		startDataThread();
-	}
-	
-	/**
-	 * Get the Owner's GameProfile
-	 * @return owner's GameProfile
-	 */
-	public GameProfile getOwnerProfile() {
-		return ownerProfile;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if(obj != null && obj.getClass() == this.getClass()) {
-			PlayerSkull objSkull = (PlayerSkull) obj;
-			return super.equals(obj) && owner.getUniqueId().toString().equalsIgnoreCase(objSkull.getOwner().getUniqueId().toString());
-		}
-		return false;
-	}
-	
-	/**
-	 * Set the SkullMeta of this Skull
-	 * 
-	 * @param itemMeta new SkullMeta
-	 * @return True if successfully applied ItemMeta, see {@link ItemFactory#isApplicable(ItemMeta, ItemStack)}
-	 */
-	@Override
-	public boolean setItemMeta(ItemMeta itemMeta) {
-		if(!(itemMeta instanceof SkullMeta)) throw new IllegalArgumentException("ItemMeta must be an instance of SkullMeta!");
-		return setItemMeta((SkullMeta) itemMeta);
-	}
-	
-	/**
-	 * Set the SkullMeta of this Skull
-	 * 
-	 * @param itemMeta new SkullMeta
-	 * @return True if successfully applied ItemMeta, see {@link ItemFactory#isApplicable(ItemMeta, ItemStack)}
-	 */
-	public final boolean setItemMeta(SkullMeta itemMeta) {
-		return super.setItemMeta(itemMeta);
-	}
-
-	private static class SkullChangeScheduler implements Runnable {
-
-		private static Field texturesField = Reflections.getField(SkullMeta.class, "profile");
-		
-		private PlayerSkull skull;
-		
-		public SkullChangeScheduler(PlayerSkull skull) {
-			this.skull = skull;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((skull == null) ? 0 : skull.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			SkullChangeScheduler other = (SkullChangeScheduler) obj;
-			if (skull == null) {
-				if (other.skull != null)
-					return false;
-			} else if (!skull.equals(other.skull)) return false;
-			return true;
-		}
-
-		@Override
-		public void run() {
-			// Get full GameProfile from Owner
-			GameProfile profile = getProfile();
-			// Set field into Skull
-			Reflections.setField(texturesField, skull.getItemMeta(), profile);
-		}
-		
-		private GameProfile getProfile() {
-			// Get profile from cache
-			GameProfile profile = profileCache.get(skull.getOwner().getUniqueId());
-			// If it does not exist
-			if(profile == null) {
-				// Check if player is online and if it's true, grab his GameProfile
-				profile = skull.getOwner().isOnline() ? Reflections.getGameProfile((Player) skull.getOwner()) : null;
-				// If the Player is offline
-				if(profile == null) {
+	private Future<GameProfile> overrideGameProfile() {
+		// start async task
+		return CompletableFuture.supplyAsync(() -> {
+			// get Profile
+			GameProfile localProfile = profileCache.get(owner.getUniqueId());
+			// if GameProfile is not in cache
+			if(localProfile == null) {
+				// if owner is not online
+				if(!owner.isOnline()) {
+					// create default gameprofile
+					localProfile = new GameProfile(UUID.fromString("c06f8906-4c8a-4911-9c29-ea1dbd1aab82"), "MHF_Steve");
+					// create String for trimmed id
 					String name = null;
-					UUID uuid = null;
-					// Download Mojang-UUID from MojangAPI
-					try(InputStream in = new URL("https://api.mojang.com/users/profiles/minecraft/").openStream()) {
-						// Convert site into JsonObject
-						JsonObject source = new JsonParser().parse(new InputStreamReader(in)).getAsJsonObject();
-						// Get Values
-						uuid = fromTrimmed(source.get("id").getAsString());
-						name = source.get("name").getAsString();
-					} catch (IOException e) {
-						Bukkit.getLogger().log(Level.SEVERE, "Could not get UUID from Player " + skull.getOwner().getName() + ". Use Alex-Skin...", e);
-						// Use Steve-UUID by error
-						uuid = UUID.fromString("c06f8906-4c8a-4911-9c29-ea1dbd1aab82");
-						name = "MHF_STEVE";
-					}
-					// Put values into valid GameProfile
-					profile = getUsableGameProfile(new GameProfile(uuid, name));
-				}
-				// Remove old data linked with ID
-				profileCache.remove(skull.getOwner().getUniqueId());
-				// Link new data with the Owner
-				profileCache.put(skull.getOwner().getUniqueId(), profile);
-				// Set Skulls ownerProfile attribute
-				setOwnerProfile(profile);
-			}
-			return profile;
-		}
-		
-		private GameProfile getUsableGameProfile(@Nonnull GameProfile body) {
-			// If there was no error by getting the ID
-			if(!"MHF_STEVE".equalsIgnoreCase(body.getName())) {
-				try {
-					// Create Settings for SessionServers
-					URLConnection connection = new URL(
-							"https://sessionserver.mojang.com/session/minecraft/profile/" 
-							+ body.getId().toString().replaceAll("-", "") + "?unsigned=false").openConnection();
-					connection.setUseCaches(false);
-					connection.setDefaultUseCaches(false);
-					connection.setDoInput(true);
-					connection.setDoOutput(true);
-					connection.addRequestProperty("Content-Type", "application/json");
-					connection.addRequestProperty("User-Agent", "Mozilla/5.0");
-					connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
-					connection.addRequestProperty("Pragma", "no-cache");
+					String trimmedID = null;
+					// start request
+					Future<JsonObject> mojangRequest = getMojangData();
 					
-					try(InputStream in = connection.getInputStream()) {
-						// Convert relevant Data to JsonObject
-						JsonObject obj = new JsonParser().parse(new InputStreamReader(in)).getAsJsonObject().get("properties").getAsJsonArray().get(0).getAsJsonObject();
-						String value = obj.get("value").getAsString();
-						String signature = obj.get("signature").getAsString();
-						
-						// Delete old properties
-						body.getProperties().clear();
-						// Build property into PropertyMap
-						body.getProperties().put("textures", new Property("textures", value, signature));
+					// if owner is not in nms name cache
+					if(owner.getUniqueId().equals(UUID.nameUUIDFromBytes(("OfflinePlayer:" + owner.getName()).getBytes()))) {
+						try {
+							// get mojang data
+							JsonObject mojangAnswer = mojangRequest.get(5, TimeUnit.SECONDS);
+							// if data is valid. else return profile
+							if(mojangAnswer != null) {
+								// override trimmedid
+								name = mojangAnswer.get("name").getAsString();
+								trimmedID = mojangAnswer.get("id").getAsString();
+							} else return localProfile;
+						} catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+							Bukkit.getLogger().log(Level.SEVERE, "ERROR: Thread interrupted...", e);
+						} catch (ExecutionException e) {
+							Bukkit.getLogger().log(Level.SEVERE, "Unhandled exception: ", e);
+						} catch (TimeoutException e) {
+							Bukkit.getLogger().log(Level.WARNING, "Cannot get data of Player " + owner.getName() + " from MojangAPI. Connection timed out...");
+						}
+					} else {
+						// get data from owner
+						name = owner.getName();
+						trimmedID = owner.getUniqueId().toString().replace("-", "");
 					}
-				} catch (IOException e) {
-					Bukkit.getLogger().log(Level.SEVERE, "Cannot create Connection to SessionServer", e);
-				}
+					// reinitialize profile
+					localProfile = new GameProfile(fromTrimmed(trimmedID), name);
+					// request from sessionserver
+					Future<JsonObject> sessionRequest = getSessionServerData(trimmedID);
+					try {
+						// get data from session
+						JsonObject sessionData = sessionRequest.get(5, TimeUnit.SECONDS);
+						// if data is valid
+						if(sessionData != null) {
+							// remove unnnecessary data
+							sessionData = sessionData.get("properties").getAsJsonArray().get(0).getAsJsonObject();
+							// write data in GameProfile
+							localProfile.getProperties().clear();
+							localProfile.getProperties().put("textures", new Property("textures", sessionData.get("value").getAsString(), sessionData.get("signature").getAsString()));
+						}
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						Bukkit.getLogger().log(Level.SEVERE, "ERROR: Thread interrupted...", e);
+					} catch (ExecutionException e) {
+						Bukkit.getLogger().log(Level.SEVERE, "Unhandled exception: ", e);
+					} catch (TimeoutException e) {
+						Bukkit.getLogger().log(Level.WARNING, "Cannot get data of Player " + owner.getName() + " from SessionServers. Connection timed out...");
+					}
+				// get GameProfile from owner
+				} else localProfile = Reflections.getGameProfile(owner.getPlayer());
 			}
-			return body;
-		}
-		
-		private UUID fromTrimmed(String trimmedUUID) {
-			if(trimmedUUID != null) {
-				StringBuilder builder = new StringBuilder(trimmedUUID.trim());
-				builder.insert(20, "-");
-				builder.insert(16, "-");
-				builder.insert(12, "-");
-				builder.insert(8, "-");
-				return UUID.fromString(builder.toString());
+			// return profile
+			return localProfile;
+		});
+	}
+	
+	private UUID fromTrimmed(String trimmedID) {
+	     return UUID.fromString(Pattern.compile("(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})")
+	    		 .matcher(trimmedID.replace("-", ""))
+	    		 .replaceAll("$1-$2-$3-$4-$5"));
+	}
+	
+	private Future<JsonObject> getMojangData() {
+		// start async task
+		return CompletableFuture.supplyAsync(() -> {
+			try(InputStream in = new URL("https://api.mojang.com/users/profiles/minecraft/" + owner.getName().toLowerCase(Locale.ENGLISH)).openStream()) {
+				// return data from mojangapi
+				return new JsonParser().parse(new InputStreamReader(in)).getAsJsonObject();
+			} catch (IOException e) {
+				Bukkit.getLogger().log(Level.WARNING, "Cannot get data of Player " + owner.getName() + " from MojangAPI. Please try again later");
 			}
+			// error. return null
 			return null;
-		}
-		
-		private void setOwnerProfile(GameProfile ownerProfile) {
-			skull.ownerProfile = ownerProfile;
-		}
+		});
+	}
+	
+	private Future<JsonObject> getSessionServerData(String trimmedID) {
+		// start async task
+		return CompletableFuture.supplyAsync(() -> {
+			try(InputStream in = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + trimmedID + "?unsigned=false").openStream()) {
+				return new JsonParser().parse(new InputStreamReader(in)).getAsJsonObject();
+			} catch (IOException e) {
+				Bukkit.getLogger().log(Level.WARNING, "Cannot get data of Player " + owner.getName() + " from SessionServers. Please try again later");
+			}
+			// error. return null
+			return null;
+		});
 	}
 }
