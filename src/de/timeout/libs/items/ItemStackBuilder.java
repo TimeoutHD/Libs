@@ -1,6 +1,8 @@
 package de.timeout.libs.items;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -144,6 +146,23 @@ public class ItemStackBuilder {
 		currentBuilding.setAmount(amount);
 		// returng this to continue
 		return this;
+	}
+	
+	/**
+	 * This method adds new lines to your lore
+	 * @param lines the lines you want to add
+	 * @return the builder to continue
+	 * @throws IllegalArgumentException if the lines are empty or null
+	 */
+	public ItemStackBuilder addLore(String... lines) {
+		// Validate
+		Validate.notEmpty(lines, "new Lines cannot be empty or null");
+		// create new lore
+		List<String> newLore = new ArrayList<>(currentBuilding.getItemMeta().getLore());
+		// add elements to lore
+		newLore.addAll(Arrays.asList(lines));
+		// execute setlore and return this to continue
+		return setLore(newLore);
 	}
 	
 	/**
