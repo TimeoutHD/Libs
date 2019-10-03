@@ -21,6 +21,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.Event.Result;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
@@ -331,8 +332,8 @@ public class GUI {
 			// validate
 			if(event.getClickedInventory() != null && event.getClickedInventory().equals(player.getOpenInventory().getTopInventory()) && 
 					event.getCurrentItem() != null && gui != null) {
-				// gui is clicked. Cancel event
-				event.setCancelled(true);
+				// gui is clicked. Deny is better than cancel
+				event.setResult(Result.DENY);
 				// if item is button
 				if(gui.isButton(event.getSlot())) {
 					// get Button
