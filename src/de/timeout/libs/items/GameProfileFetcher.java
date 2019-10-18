@@ -25,7 +25,7 @@ import de.timeout.libs.Reflections;
  *
  * NOTICE: Signature key is in {@link YggdrasilMinecraftSessionService#publicKey}
  */
-class GameProfileFetcher implements Supplier<GameProfile> {
+public class GameProfileFetcher implements Supplier<GameProfile> {
 			
 	private static final Class<?> tileentityskullClass = Reflections.getNMSClass("TileEntitySkull");
 	
