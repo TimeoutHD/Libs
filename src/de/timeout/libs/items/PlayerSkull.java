@@ -8,6 +8,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -20,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 
 import de.timeout.libs.Reflections;
 import net.md_5.bungee.api.ChatColor;
@@ -36,6 +39,8 @@ public class PlayerSkull extends ItemStack {
 	
 	private static final Field metaProfileField = Reflections.getField(craftmetaskullClass, "profile");
 	private static final Field skullProfileField = Reflections.getField(craftskullClass, "profile");
+	
+	private static final Base64 base64 = new Base64();
 	
 	public static final ItemStack SKELETON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 0);
 	public static final ItemStack WITHER_SKELETON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 1);
@@ -106,6 +111,26 @@ public class PlayerSkull extends ItemStack {
 	@SuppressWarnings("deprecation")
 	public PlayerSkull(String username) throws InterruptedException, ExecutionException, TimeoutException {
 		this(username, 1, Bukkit.getOfflinePlayer(username));
+	}
+	
+	public static ItemStack getCustomSkull(String url) {
+		// create random GameProfile
+		GameProfile profile = new GameProfile(UUID.randomUUID(), null);
+		// Validate
+		Validate.notNull(profile.getProperties(), "Profile doesn't contain a property map");
+		// encode data
+        byte[] encodedData = base64.encode(String.format("{textures:{SKIN:{url:\"%s\"}}}", url).getBytes());
+        // put values in profile
+        profile.getProperties().put("textures", new Property("textures", new String(encodedData)));
+        // create ItemStack and get ItemMeta
+        ItemStack skull = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 3);
+        ItemMeta meta = skull.getItemMeta();
+        // write Profile in ItemMeta
+		Reflections.setField(metaProfileField, meta, profile);
+		// set meta in skull
+		skull.setItemMeta(meta);
+		// return skull
+		return skull;
 	}
 
 	/**
