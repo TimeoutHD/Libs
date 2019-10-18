@@ -52,7 +52,7 @@ public class ConfigCreator {
 				ByteStreams.copy(in, out);
 			}
 		}
-		main.getServer().getConsoleSender().sendMessage(CONFIG_LOADED.replaceAll("%f", configuration.getName()));
+		main.getServer().getConsoleSender().sendMessage(CONFIG_LOADED.replace("%f", configuration.getName()));
 		return configuration;
 	}
 	
@@ -66,7 +66,7 @@ public class ConfigCreator {
 	private File loadFile(String filePath) throws IOException {
 		File configFile = Paths.get(main.getDataFolder().getAbsolutePath(), filePath).toFile();
 		if(configFile.getParentFile().mkdirs() || configFile.createNewFile()) 
-			main.getServer().getConsoleSender().sendMessage(CONFIG_GENERATE.replaceAll("%f", configFile.getName()));
+			main.getServer().getConsoleSender().sendMessage(CONFIG_GENERATE.replace("%f", configFile.getName()));
 		
 		return configFile;
 	}
