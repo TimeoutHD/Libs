@@ -9,11 +9,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang.Validate;
-import org.bukkit.Bukkit;
+
+import com.avaje.ebeaninternal.server.lib.DaemonThreadFactory;
 
 /**
  * This Class is a Hook into the MySQL-Database
@@ -21,6 +25,8 @@ import org.bukkit.Bukkit;
  *
  */
 public class MySQL {
+	
+	private static final Executor executor = Executors.newFixedThreadPool(3, new DaemonThreadFactory("MySQL-Factory"));
 	
 	private String host;
 	private String database;
@@ -94,11 +100,11 @@ public class MySQL {
 	 * @return the converted statement
 	 * @throws SQLException If there was an error.
 	 */
-	private PreparedStatement convertStatement(String statement, String[] args) throws SQLException {
+	private PreparedStatement convertStatement(String statement, Object[] args) throws SQLException {
 		if(statement != null) {
 			//Do not close this Statement here!!
 			PreparedStatement ps = connection.prepareStatement(statement);
-			for(int i = 0; i < args.length; i++) ps.setString(i +1, args[i]);
+			for(int i = 0; i < args.length; i++) ps.setString(i +1, args[i].toString());
 			return ps;
 		} else throw new IllegalArgumentException("Statement cannot be null");
 	}
@@ -112,9 +118,17 @@ public class MySQL {
 	 * @throws SQLException If there were an error in the MySQL-Statement
 	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
 	 */
-	public synchronized boolean executeVoidStatement(String statement, String... variables) throws SQLException {
+	public Future<Boolean> executeVoidStatement(String statement, Object... variables) throws SQLException {
 		if(isConnected()) {
-			return convertStatement(statement, variables).execute();
+			return CompletableFuture.supplyAsync(() -> {
+				try {
+					return convertStatement(statement, variables).execute();
+				} catch (SQLException e) {
+					Logger.getGlobal().log(Level.SEVERE, "You have an error in your MySQL-Syntax. Please check your command", e);
+				}
+				// failed return false
+				return false;
+			}, executor);
 		} else throw new IllegalStateException("Connection is closed. Please connect to a MySQL-Database before using any statements");
 	}
 	
@@ -134,10 +148,11 @@ public class MySQL {
 				try {
 					return new Table(convertStatement(statement, variables).executeQuery());
 				} catch (SQLException e) {
-					Bukkit.getLogger().log(Level.SEVERE, "You have an error in your MySQL-Syntax. Please check your command", e);
+					Logger.getGlobal().log(Level.SEVERE, "You have an error in your MySQL-Syntax. Please check your command", e);
 				}
+				// failed return null
 				return null;
-			});
+			}, executor);
 		} else throw new IllegalStateException("Connection is closed. Please connect to a MySQL-Database before using any statements");
 	}
 	

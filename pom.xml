@@ -2,7 +2,12 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>de.timeout</groupId>
   <artifactId>Libs</artifactId>
-  <version>1.4.5_180</version>
+  <version>1.4.9_180</version>
+  
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  
   <build>
     <sourceDirectory>src</sourceDirectory>
     <resources>
@@ -26,6 +31,7 @@
       <plugin>
       	<groupId>org.apache.maven.plugins</groupId>
       	<artifactId>maven-shade-plugin</artifactId>
+      	<version>3.2.0</version>
       	<executions>
 		  <execution>
 		  	<phase>package</phase>
@@ -35,11 +41,35 @@
           </execution>
       	</executions>
       	<configuration>
-      		<finalName>${artifactId}</finalName>
+      		<finalName>${project.artifactId}</finalName>
       	</configuration>
+      </plugin>
+      
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.1.1</version>
+        <configuration>
+          <show>private</show>
+          <nohelp>true</nohelp>
+        </configuration>
       </plugin>
     </plugins>
   </build>
+  
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.1.1</version>
+        <configuration>
+          <stylesheetfile>${basedir}/doc/stylesheet.css</stylesheetfile>
+          <show>public</show>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
   
   <repositories>    
      <repository>

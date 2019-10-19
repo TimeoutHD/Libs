@@ -6,32 +6,27 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Paths;
-
-import org.bukkit.plugin.java.JavaPlugin;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.common.io.ByteStreams;
 
-import net.md_5.bungee.api.ChatColor;
-
 public class ConfigCreator {
-
-	private static final String CONFIG_LOADED = ChatColor.translateAlternateColorCodes('&', "&8[&aOut-Configuration&8] &a%f &f is loaded &asucessfully.");
-	private static final String CONFIG_GENERATE = ChatColor.translateAlternateColorCodes('&', "&8[&aOut-Configuration&8] &a%f &7could not be found: &aGenerate...");
 	
-	private JavaPlugin main;
+	private static final String ANSI_GREY = "\u001B[90m";
+	private static final String ANSI_LIME = "\u001B[92m";
+	private static final String ANSI_WHITE = "\u001B[97m";
+	private static final String ANSI_RESET = "\u001B[0m";
+
+	private static final String CONFIG_LOADED = ANSI_GREY + "[" + ANSI_LIME + "Out-Configuration" + ANSI_GREY + "] " + ANSI_LIME + "%f " + ANSI_WHITE + " is loaded " + ANSI_LIME + "sucessfully" + ANSI_WHITE + "." + ANSI_RESET;
+	private static final String CONFIG_GENERATE = ANSI_GREY + "[" + ANSI_LIME + "Out-Configuration" + ANSI_GREY + "] "+ ANSI_LIME + "%f " + ANSI_WHITE + "could not be found: " + ANSI_LIME + "Generate..." + ANSI_RESET;
+	
+	private File dataFolder;
 	private String assetsDirectory;
 	
-	public ConfigCreator(JavaPlugin main, String assetsDirectory) {
+	public ConfigCreator(File datafolder, String assetsDirectory) {
 		this.assetsDirectory = assetsDirectory;
-		this.main = main;
-	}
-	
-	/**
-	 * This method returns the main class of your plugin.
-	 * @return the main class
-	 */
-	public JavaPlugin getMain() {
-		return main;
+		this.dataFolder = datafolder;
 	}
 	
 	/**
@@ -47,12 +42,12 @@ public class ConfigCreator {
 		// If file is empty
 		if(configuration.length() == 0L) {
 			// copy files into subfolder
-			try(InputStream in = main.getResource(Paths.get(assetsDirectory, configPath).toString());
+			try(InputStream in = this.getClass().getClassLoader().getResourceAsStream(Paths.get(assetsDirectory, configPath).toString());
 					OutputStream out = new FileOutputStream(configuration)) {
 				ByteStreams.copy(in, out);
 			}
 		}
-		main.getServer().getConsoleSender().sendMessage(CONFIG_LOADED.replace("%f", configuration.getName()));
+		Logger.getGlobal().log(Level.INFO, () -> CONFIG_LOADED.replace("%f", configuration.getName()));
 		return configuration;
 	}
 	
@@ -64,9 +59,9 @@ public class ConfigCreator {
 	 * @throws IOException if the system cannot create the file due input output errors
 	 */
 	private File loadFile(String filePath) throws IOException {
-		File configFile = Paths.get(main.getDataFolder().getAbsolutePath(), filePath).toFile();
+		File configFile = Paths.get(dataFolder.getAbsolutePath(), filePath).toFile();
 		if(configFile.getParentFile().mkdirs() || configFile.createNewFile()) 
-			main.getServer().getConsoleSender().sendMessage(CONFIG_GENERATE.replace("%f", configFile.getName()));
+			Logger.getGlobal().log(Level.INFO, () -> CONFIG_GENERATE.replace("%f", configFile.getName()));
 		
 		return configFile;
 	}
