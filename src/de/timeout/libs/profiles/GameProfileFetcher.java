@@ -1,7 +1,8 @@
-package de.timeout.libs.items;
+package de.timeout.libs.profiles;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -20,8 +21,8 @@ import com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService;
 import de.timeout.libs.Reflections;
 
 /**
- * 
- * @author timeout
+ * This class repesents a bridge to Mojangs SessionServers to fetch already existing GameProfiles
+ * @author Timeout
  *
  * NOTICE: Signature key is in {@link YggdrasilMinecraftSessionService#publicKey}
  */
@@ -35,8 +36,8 @@ public class GameProfileFetcher implements Supplier<GameProfile> {
 	
 	private OfflinePlayer owner;
 	
-	public GameProfileFetcher(OfflinePlayer owner) {
-		this.owner = owner;
+	public GameProfileFetcher(UUID owner) {
+		this.owner = Bukkit.getServer().getOfflinePlayer(owner);
 	}
 
 	@Override

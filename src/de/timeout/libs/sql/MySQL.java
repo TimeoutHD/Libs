@@ -9,15 +9,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.Validate;
-
-import com.avaje.ebeaninternal.server.lib.DaemonThreadFactory;
 
 /**
  * This Class is a Hook into the MySQL-Database
@@ -26,7 +27,7 @@ import com.avaje.ebeaninternal.server.lib.DaemonThreadFactory;
  */
 public class MySQL {
 	
-	private static final Executor executor = Executors.newFixedThreadPool(3, new DaemonThreadFactory("MySQL-Factory"));
+	private static final Executor executor = Executors.newFixedThreadPool(3);
 	
 	private String host;
 	private String database;
@@ -52,7 +53,7 @@ public class MySQL {
 		if(!isConnected()) {
 			// Bungeecord / Bukkit manage Driver-initialization -> not necessary. Only necessary when you use this outside the Bukkit / Bungecord API
 			// DriverManager.registerDriver(new Driver());
-			connection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true&useOldAliasMetadataBehavior=true&useUnicode=true&useJDBCCompilantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", username, password);
+			connection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true&useOldAliasMetadataBehavior=true&useUnicode=true&useJDBCCompilantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=true", username, password);
 			return true;
 		}
 		return false;
@@ -110,15 +111,59 @@ public class MySQL {
 	}
 	
 	/**
+	 * Executes a Void-Statement. A void statement is a statement, that returns a bool instead of a table like INSERT, UPDATE or DELETE.
+	 * 
+	 * @param statement The statement.
+	 * @param variables the arguments in the right order. Variables in statements are displayed with '?'
+	 * @return a bool which contains the result
+	 * @throws TimeoutException if the connection to your database timed out
+	 * @throws SQLException if there were an error in the MySQL-Statement
+	 */
+	public boolean executeVoidStatement(String statement, Object... variables) throws TimeoutException, SQLException {
+		try {
+			return executeFutureVoidStatement(statement, variables).get(5, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			Logger.getGlobal().log(Level.SEVERE, "Cannot execute Void-Statement. Thread interrupted", e);
+		} catch (ExecutionException e) {
+			Logger.getGlobal().log(Level.WARNING, "Unhandled exception while executing void statement", e);
+		}
+		return false;
+	}
+	
+	/**
+	 * Execute a statement and returns a table. This method is used with the "SELECT"-Statement.
+	 * The return-type is a table which has columns and tuples. 
+	 *  
+	 * @param statement The statement
+	 * @param variables the arguments in the right order. Variables in statements are displayred with '?'
+	 * @return the table as table object or null if there were an error
+	 * @throws SQLException If there is an error in your MySQL-Statement
+	 * @throws TimeoutException if the connection to the database timed out
+	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
+	 */
+	public Table executeStatement(String statement, Object... variables) throws TimeoutException, SQLException {
+		try {
+			return executeFutureStatement(statement, variables).get(5, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			Logger.getGlobal().log(Level.SEVERE, "Fatal error while executing statement. Thread interrupted", e);
+		} catch (ExecutionException e) {
+			Logger.getGlobal().log(Level.WARNING, "Unhandled exception while executing statement", e);
+		}
+		return null;
+	}
+	
+	/**
 	 * Execute a Void-Statement. A void statement is a statement, that returns a bool instead of a table like INSERT, UPDATE or DELETE.
 	 * 
 	 * @param statement The statement
 	 * @param variables the arguments in the right order. Variables in statements are displayed with '?'
-	 * @return a bool, which contains the result
+	 * @return a Future with a bool which contains the result
 	 * @throws SQLException If there were an error in the MySQL-Statement
 	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
 	 */
-	public Future<Boolean> executeVoidStatement(String statement, Object... variables) throws SQLException {
+	public Future<Boolean> executeFutureVoidStatement(String statement, Object... variables) throws SQLException {
 		if(isConnected()) {
 			return CompletableFuture.supplyAsync(() -> {
 				try {
@@ -142,7 +187,7 @@ public class MySQL {
 	 * @throws SQLException If there is an error in your MySQL-Statement
 	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
 	 */
-	public Future<Table> executeStatement(String statement, String... variables) throws SQLException {
+	public Future<Table> executeFutureStatement(String statement, Object... variables) throws SQLException {
 		if(isConnected()) {
 			return CompletableFuture.supplyAsync(() -> {
 				try {

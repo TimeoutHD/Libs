@@ -51,25 +51,14 @@ public class GUI {
 	
 	/**
 	 * This constructor creates a new GUI without a design
-	 */
-	protected GUI() {
-		this((JavaPlugin) Bukkit.getPluginManager().getPlugins()[0]);
-	}
-	
-	/**
-	 * This constructor creates a new GUI without a design
-	 * @deprecated Use {@link GUI} instead.
 	 * @param main the mainclass of the plugin
 	 */
-	@Deprecated
-	public GUI(JavaPlugin main) {
-		// validate
-		Validate.notNull(main, "Main cannot be null");
+	public GUI() {
 		// initialize final fields
 		uniqueID = UUID.randomUUID();
 		
 		// initialize handlers if handler does not exist
-		if(handler == null) handler = new GUIHandler(main);
+		if(handler == null) handler = new GUIHandler((JavaPlugin) Bukkit.getPluginManager().getPlugins()[0]);
 	}
 	
 	/**
@@ -79,11 +68,6 @@ public class GUI {
 	 */
 	public GUI(Inventory design) {
 		this(null, design, (short) 7);
-	}
-	
-	@Deprecated
-	public GUI(JavaPlugin main, String name, Inventory design) {
-		this(main, name, design, (short) 7);
 	}
 	
 	public GUI(String name, Inventory design) {
@@ -112,32 +96,6 @@ public class GUI {
 			// set to n if item is null.
 			this.design.setItem(i, item != null ? item : n);
 		}
-	}
-	
-	@Deprecated
-	public GUI(JavaPlugin main, String name, Inventory design, @Nonnegative short nColor) {
-		this(main);
-		// Validate
-		Validate.notNull(design, "Inventory-Design cannot be null");
-		// reinitialize n
-		this.n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, nColor, ChatColor.translateAlternateColorCodes('&', "&7"));
-		// initialite design and slot for buttons
-		this.design = Bukkit.createInventory(null, design.getSize(), name != null ? name : design.getTitle());
-		functions = new ArrayList<>(design.getSize());
-		// initialize design
-		for(int i = 0; i < this.design.getSize(); i++) {
-			// add placeholder for function
-			functions.add(null);
-			// get ItemStack
-			ItemStack item = this.design.getItem(i);
-			// set to n if item is null.
-			if(item == null) this.design.setItem(i, n);
-		}
-	}
-	
-	@Deprecated
-	public GUI(GUI base, JavaPlugin main) {
-		this(main, base.getName(), base.getDesign(), base.n.getDurability());
 	}
 	
 	/**
@@ -186,6 +144,15 @@ public class GUI {
 	}
 	
 	/**
+	 * This method validates the slot
+	 * @param slot the slot
+	 */
+	private void validateSlot(@Nonnegative int slot) {
+		// throw new exception when Slot is invalid
+		if(slot < 0 || slot >= this.design.getSize()) throw new IllegalArgumentException("slot must be in range of the gui slots");
+	}
+	
+	/**
 	 * This method creates a new button on a certain position without changing the design at this position.
 	 * @param slot the slot of this button
 	 * @param click the action what will happen when a player clicks on it.
@@ -198,9 +165,9 @@ public class GUI {
 	 * });
 	 * </code>
 	 */
-	public void registerButton(int slot, Consumer<ButtonClickEvent> click) {
+	public void registerButton(@Nonnegative int slot, Consumer<ButtonClickEvent> click) {
 		// Validate
-		if(slot < 0 || slot >= this.design.getSize()) throw new IllegalArgumentException("slot must be in range of the gui slots");
+		validateSlot(slot);
 		// set new button
 		this.design.setItem(slot, new Button(this.design.getItem(slot), click));
 		// cache click in storage
@@ -223,19 +190,33 @@ public class GUI {
 	 * });
 	 * </code>
 	 */
-	public void registerButton(int slot, ItemStack design, Consumer<ButtonClickEvent> click) {
+	public void registerButton(@Nonnegative int slot, ItemStack design, Consumer<ButtonClickEvent> click) {
 		// Validate
 		Validate.notNull(design, "The design of the button cannot be null");
-		if(slot < 0 || slot >= this.design.getSize()) throw new IllegalArgumentException("slot must be in range of the gui slots");
+		validateSlot(slot);
 		// set new button
 		this.design.setItem(slot, new Button(design, click));
 		// cache click in storage
 		functions.set(slot, click);
 	}
 	
+	/**
+	 * This method links an already existing button on a certain slot
+	 * @param slot the slot where the button should be
+	 * @param button the button itself
+	 * @throws IllegalArgumentException if the button is null or the slot is out of range
+	 */
+	public void registerButton(@Nonnegative int slot, Button button) {
+		// Validate
+		Validate.notNull(button, "Button cannot be null");
+		validateSlot(slot);
+		// call method
+		this.registerButton(slot, button.clone(), button.getClickFunction());
+	}
+	
 	public void removeButton(int slot) {
 		// validate
-		if(slot < 0 || slot >= this.design.getSize()) throw new IllegalArgumentException("slot is out of range. Maximum is allowed " + (this.design.getSize() -1));
+		validateSlot(slot);
 		// remove item
 		design.setItem(slot, n);
 		// remove function
@@ -339,7 +320,7 @@ public class GUI {
 					// get Button
 					Button button = gui.getButton(event.getSlot());
 					// call ButtonClickEvent
-					ButtonClickEvent buttonClickEvent = new ButtonClickEvent(event, button);
+					ButtonClickEvent buttonClickEvent = new ButtonClickEvent(event, gui, button);
 					Bukkit.getPluginManager().callEvent(buttonClickEvent);
 					// execute click when event is not cancelled
 					if(!buttonClickEvent.isCancelled())
@@ -478,16 +459,6 @@ public class GUI {
 		}
 		
 		/**
-		 * This Method returns the design of this Button
-		 * @deprecated this Method is not necessary anymore. Button inheritages the ItemStack 
-		 * @return the design of this Button
-		 */
-		@Deprecated
-		public ItemStack getDesign() {
-			return this;
-		}
-		
-		/**
 		 * This Method returns the click function of the button
 		 * @return the click function
 		 */
@@ -519,11 +490,13 @@ public class GUI {
 
 		private InventoryClickEvent previousEvent;
 		private Button button;
+		private GUI gui;
 		private boolean cancel;
 		
-		public ButtonClickEvent(InventoryClickEvent previousEvent, Button button) {
+		public ButtonClickEvent(InventoryClickEvent previousEvent, GUI clickedGUI, Button button) {
 			this.previousEvent = previousEvent;
 			this.button = button;
+			this.gui = clickedGUI;
 		}
 		
 		public static HandlerList getHandlerList() {
@@ -582,6 +555,14 @@ public class GUI {
 		}
 		
 		/**
+		 * This method returns the current gui object
+		 * @return the current gui.
+		 */
+		public GUI getGUI() {
+			return gui;
+		}
+		
+		/**
 		 * Get the player who clicked on the button.
 		 * @return the player who clicked on the button
 		 */
@@ -629,16 +610,6 @@ public class GUI {
 		 */
 		public HumanEntity getPlayer() {
 			return closeEvent.getPlayer();
-		}
-		
-		/**
-		 * This method returns the inventory close event
-		 * @return the inventory close event
-		 * @deprecated please use the Method {@link GUICloseEvent#getInventoryCloseEvent()} instead
-		 */
-		@Deprecated
-		public InventoryCloseEvent getCloseEvent() {
-			return getInventoryCloseEvent();
 		}
 		
 		/**

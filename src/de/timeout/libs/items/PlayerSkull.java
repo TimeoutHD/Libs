@@ -10,7 +10,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.Validate;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -25,6 +24,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 
 import de.timeout.libs.Reflections;
+import de.timeout.libs.profiles.GameProfileFetcher;
 import net.md_5.bungee.api.ChatColor;
 
 /**
@@ -49,24 +49,20 @@ public class PlayerSkull extends ItemStack {
 	public static final ItemStack ENDERDRAGON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 5);
 	public static final ItemStack STEVE = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 3);
 	
-	private OfflinePlayer owner;
 	private GameProfile profile;
 	
 	/**
 	 * This Constructor creates a new Skull-ItemStack.
 	 * @param displayname the displayname of this itemstack
 	 * @param amount the amount of this skull item
-	 * @param owner the owner of this skull item
 	 * @throws InterruptedException if your Thread interrupts
 	 * @throws ExecutionException if there was an error in this class. This should not happen. Send this report immediately
 	 * @throws TimeoutException if the connection timed out and no GameProfile was avaiable
 	 */
-	public PlayerSkull(String displayname, int amount, OfflinePlayer owner) throws InterruptedException, ExecutionException, TimeoutException {
+	public PlayerSkull(String displayname, int amount, UUID uuid) throws InterruptedException, ExecutionException, TimeoutException {
 		super(ItemStackAPI.createItemStack(Material.SKULL_ITEM, amount > 0 ? amount : 1, (short) 3, ChatColor.translateAlternateColorCodes('&', displayname)));
-		
-		this.owner = owner;
-		
-		Future<GameProfile> request = overrideGameProfile();
+				
+		Future<GameProfile> request = overrideGameProfile(uuid);
 		// get Profile
 		profile = request.get(5, TimeUnit.SECONDS);
 		// Override profile field
@@ -84,33 +80,7 @@ public class PlayerSkull extends ItemStack {
 	 * @throws TimeoutException if the connection timed out and no GameProfile was avaiable
 	 */
 	public PlayerSkull(int amount, OfflinePlayer owner) throws InterruptedException, ExecutionException, TimeoutException {
-		this(owner.getName(), amount, owner);
-	}
-	
-	/**
-	 * This Constructor creates a new Skull-ItemStack
-	 * @param displayname the displayname of the skull
-	 * @param amount the amount of the itemstack
-	 * @param owner the owner of the skull
-	 * @throws InterruptedException if your Thread interrupts
-	 * @throws ExecutionException if there was an error in this class. This should not happen. Send this report immediately
-	 * @throws TimeoutException if the connection timed out and no GameProfile was avaiable
-	 * @throws IllegalStateException if the thread is the main thread
-	 */
-	public PlayerSkull(String displayname, int amount, UUID owner) throws InterruptedException, ExecutionException, TimeoutException {
-		this(displayname, amount, Bukkit.getOfflinePlayer(owner));
-	}
-	
-	/**
-	 * This constructor create a new Skul-ItemStack
-	 * @param username the displayname and name of the owner
-	 * @throws InterruptedException if your Thread interrupts
-	 * @throws ExecutionException if there was an error in this class. This should not happen. Send this report immediately
-	 * @throws TimeoutException if the connection timed out and no GameProfile was avaiable
-	 */
-	@SuppressWarnings("deprecation")
-	public PlayerSkull(String username) throws InterruptedException, ExecutionException, TimeoutException {
-		this(username, 1, Bukkit.getOfflinePlayer(username));
+		this(owner.getName(), amount, owner.getUniqueId());
 	}
 	
 	public static ItemStack getCustomSkull(String url) {
@@ -136,9 +106,9 @@ public class PlayerSkull extends ItemStack {
 	/**
 	 * This method downloads the gameprofile asynchronously
 	 */
-	private Future<GameProfile> overrideGameProfile() {
+	private static Future<GameProfile> overrideGameProfile(UUID uuid) {
 		// start async task
-		return CompletableFuture.supplyAsync(() -> new GameProfileFetcher(owner).get());
+		return CompletableFuture.supplyAsync(() -> new GameProfileFetcher(uuid).get());
 	}
 	
 	/**
