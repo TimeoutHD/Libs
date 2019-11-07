@@ -6,11 +6,12 @@ import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import com.google.gson.JsonObject;
+
 import de.timeout.libs.Reflections;
 
 public class Titles {
 	
-	private static final String JSON_PATTERN = "{\"text\":%s\"}";
 	private static final String SENDPACKET = "sendPacket";
 	
 	private static final Class<?> packetplayouttitleClass = Reflections.getNMSClass("PacketPlayOutTitle");
@@ -33,7 +34,7 @@ public class Titles {
 			// Define Packet
 			Object packet = packetplayouttitleClass.getConstructor(enumtitleactionClass, ichatbasecomponentClass, int.class, int.class, int.class)
 					.newInstance(enumtitleactionClass.getField("TITLE").get(enumtitleactionClass),
-							chatserializerClass.getMethod("a", String.class).invoke(chatserializerClass, String.format(JSON_PATTERN, msg)), fadein, stay, fadeout);
+							chatserializerClass.getMethod("a", String.class).invoke(chatserializerClass, createJsonObject(msg)), fadein, stay, fadeout);
 			// Send packet
 			playerconnectionClass.getMethod(SENDPACKET, packetClass).invoke(Reflections.getValue(playerconnectionField, Reflections.getEntityPlayer(p)), packet);
 		} catch (IllegalArgumentException | SecurityException | ReflectiveOperationException e) {
@@ -46,7 +47,7 @@ public class Titles {
 			// Define Packet
 			Object packet = packetplayouttitleClass.getConstructor(enumtitleactionClass, ichatbasecomponentClass, int.class, int.class, int.class)
 					.newInstance(enumtitleactionClass.getField("SUBTITLE").get(enumtitleactionClass),
-							chatserializerClass.getMethod("a", String.class).invoke(chatserializerClass, String.format(JSON_PATTERN, msg)), fadein, stay, fadeout);
+							chatserializerClass.getMethod("a", String.class).invoke(chatserializerClass, createJsonObject(msg)), fadein, stay, fadeout);
 			// Send packet
 			playerconnectionClass.getMethod(SENDPACKET, packetClass).invoke(Reflections.getValue(playerconnectionField, Reflections.getEntityPlayer(p)), packet);
 		} catch (IllegalArgumentException | SecurityException | ReflectiveOperationException e) {
@@ -56,7 +57,7 @@ public class Titles {
 	
 	public static void sendActionBar(Player p, String msg) {
 		try {
-			Object cbc = chatserializerClass.getMethod("a", String.class).invoke(chatserializerClass, String.format(JSON_PATTERN, msg));
+			Object cbc = chatserializerClass.getMethod("a", String.class).invoke(chatserializerClass, createJsonObject(msg));
 			Object packet = packetplayoutchatClass.getConstructor(ichatbasecomponentClass, byte.class).newInstance(cbc, (byte) 2);
 			// Send Packet
 			playerconnectionClass.getMethod(SENDPACKET, packetClass).invoke(Reflections.getValue(playerconnectionField, Reflections.getEntityPlayer(p)), packet);
@@ -65,4 +66,9 @@ public class Titles {
 		}
 	}
 	
+	private static String createJsonObject(String msg) {
+		JsonObject obj = new JsonObject();
+		obj.addProperty("text", msg);
+		return obj.toString();
+	}
 }
