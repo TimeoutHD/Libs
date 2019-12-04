@@ -66,6 +66,18 @@ public class ItemStackBuilder {
 	}
 	
 	/**
+	 * This method sets a new durability for the item
+	 * @param damage the duratibiliy
+	 * @return the builder to continue
+	 */
+	public ItemStackBuilder setDurability(short damage) {
+		// set damage
+		currentBuilding.setDurability(damage);
+		// return this to continue
+		return this;
+	}
+	
+	/**
 	 * This method set the display name of the item
 	 * @param displayName the display name
 	 * @return the builder to continue

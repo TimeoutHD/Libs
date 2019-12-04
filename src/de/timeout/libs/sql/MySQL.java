@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -53,7 +54,15 @@ public class MySQL {
 		if(!isConnected()) {
 			// Bungeecord / Bukkit manage Driver-initialization -> not necessary. Only necessary when you use this outside the Bukkit / Bungecord API
 			// DriverManager.registerDriver(new Driver());
-			connection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true&useOldAliasMetadataBehavior=true&useUnicode=true&useJDBCCompilantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=true", username, password);
+			connection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database
+					+ "?autoReconnect=true"
+					+ "&useOldAliasMetadataBehavior=true"
+					+ "&useUnicode=true"
+					+ "&useJDBCCompilantTimezoneShift=true"
+					+ "&useLegacyDatetimeCode=false"
+					+ "&serverTimezone=UTC"
+					+ "&useSSL=false",
+				username, password);
 			return true;
 		}
 		return false;
@@ -166,13 +175,11 @@ public class MySQL {
 	public Future<Boolean> executeFutureVoidStatement(String statement, Object... variables) throws SQLException {
 		if(isConnected()) {
 			return CompletableFuture.supplyAsync(() -> {
-				try {
-					return convertStatement(statement, variables).execute();
-				} catch (SQLException e) {
-					Logger.getGlobal().log(Level.SEVERE, "You have an error in your MySQL-Syntax. Please check your command", e);
-				}
-				// failed return false
-				return false;
+					try {
+						return convertStatement(statement, variables).execute();
+					} catch (SQLException e) {
+						throw new CompletionException(e);
+					}
 			}, executor);
 		} else throw new IllegalStateException("Connection is closed. Please connect to a MySQL-Database before using any statements");
 	}
@@ -193,10 +200,8 @@ public class MySQL {
 				try {
 					return new Table(convertStatement(statement, variables).executeQuery());
 				} catch (SQLException e) {
-					Logger.getGlobal().log(Level.SEVERE, "You have an error in your MySQL-Syntax. Please check your command", e);
+					throw new CompletionException(e);
 				}
-				// failed return null
-				return null;
 			}, executor);
 		} else throw new IllegalStateException("Connection is closed. Please connect to a MySQL-Database before using any statements");
 	}

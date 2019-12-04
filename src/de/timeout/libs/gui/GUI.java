@@ -45,6 +45,7 @@ public class GUI {
 	
 	protected UUID uniqueID;
 	protected Inventory design;
+	protected Consumer<GUICloseEvent> closeFunction;
 	
 	// it is not possible to storage more than NMS-Tags in ItemStacks...
 	protected List<Consumer<ButtonClickEvent>> functions;
@@ -75,10 +76,14 @@ public class GUI {
 	}
 	
 	public GUI(Inventory design, @Nonnegative short nColor) {
-		this(null, design, nColor);
+		this(design.getName(), design, nColor);
 	}
 	
 	public GUI(String name, Inventory design, @Nonnegative short nColor) {
+		this(name, design, nColor, null);
+	}
+	
+	public GUI(String name, Inventory design, @Nonnegative short nColor, Consumer<GUICloseEvent> event) {
 		this();
 		// Validate
 		Validate.notNull(design, "Inventory-Design cannot be null");
@@ -87,6 +92,7 @@ public class GUI {
 		// initialize design and slot for Buttons
 		this.design = Bukkit.createInventory(null, design.getSize(), name != null ? name : design.getTitle());
 		functions = new ArrayList<>(design.getSize());
+		this.closeFunction = event;
 		// apply design
 		for(int i = 0; i < this.design.getSize(); i++) {
 			// add placeholder for function
@@ -103,7 +109,7 @@ public class GUI {
 	 * @param base the original gui 
 	 */
 	public GUI(GUI base) {
-		this(base.design, base.n.getDurability());
+		this(base.design.getName(), base.design, base.n.getDurability(), base.closeFunction);
 	}
 	
 	/**
@@ -114,12 +120,28 @@ public class GUI {
 		return uniqueID;
 	}
 	
+	/**
+	 * This method returns the title of the GUI
+	 * @return the title
+	 */
 	public String getName() {
 		return design.getName();
 	}
 	
+	/**
+	 * This method returns the design of the gui
+	 * @return
+	 */
 	public Inventory getDesign() {
 		return design;
+	}
+	
+	/**
+	 * This method sets the close function of the gui. null deletes the close function
+	 * @param event the new closefunction or null
+	 */
+	public void setCloseFunction(Consumer<GUICloseEvent> event) {
+		this.closeFunction = event;
 	}
 	
 	/**
@@ -340,6 +362,8 @@ public class GUI {
 				Bukkit.getPluginManager().callEvent(closeEvent);
 				// destroy gui when bool is true
 				if(closeEvent.isDestroyed()) gui.destroy();
+				// execute close function when function is not cancelled and function is not null
+				if(!closeEvent.isFunctionCancelled() && gui.closeFunction != null) gui.closeFunction.accept(closeEvent);
 			}
 		}
 		
@@ -584,6 +608,7 @@ public class GUI {
 		private GUI gui;
 		private InventoryCloseEvent closeEvent;
 		private boolean destroyGUI;
+		private boolean cancelCloseFunction;
 		
 		/**
 		 * This constructor creates a new event
@@ -636,6 +661,23 @@ public class GUI {
 		 */
 		public void setDestroyed(boolean arg0) {
 			this.destroyGUI = arg0;
+		}
+		
+		/**
+		 * This method checks, if the close function of the gui will be executed
+		 * @return if the close function is executed
+		 */
+		public boolean isFunctionCancelled() {
+			return cancelCloseFunction;
+		}
+		
+		/**
+		 * This method changes the execution of the function
+		 * This method decides if the close function will be executed or not
+		 * @param arg0 if the close function will be executed
+		 */
+		public void setFunctionCancelled(boolean arg0) {
+			this.cancelCloseFunction = arg0;
 		}
 		
 		/**
