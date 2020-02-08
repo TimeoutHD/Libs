@@ -1,10 +1,10 @@
 package de.timeout.libs.vector;
 
-import org.bukkit.util.Vector;
 
 public class Level {
 
-	private Vector supportVector, normalVector;
+	private Vector supportVector;
+	private Vector normalVector;
 	
 	public Level(Vector supportVector, Vector v, Vector u) {
 		this.supportVector = supportVector;

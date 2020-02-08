@@ -1,10 +1,9 @@
 package de.timeout.libs.vector;
 
-import org.bukkit.util.Vector;
-
 public class Straight {
 
-	private Vector supportVector, directionVector;
+	private Vector supportVector;
+	private Vector directionVector;
 	
 	public Straight(Vector support, Vector direction) {
 		this.supportVector = support;
