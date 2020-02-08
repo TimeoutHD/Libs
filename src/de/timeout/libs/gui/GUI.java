@@ -43,6 +43,7 @@ public class GUI {
 	
 	protected ItemStack n;
 	
+	protected String name;
 	protected UUID uniqueID;
 	protected Inventory design;
 	protected Consumer<GUICloseEvent> closeFunction;
@@ -68,29 +69,30 @@ public class GUI {
 	 * @param design
 	 */
 	public GUI(Inventory design) {
-		this(null, design, (short) 7);
+		this(null, design, Material.GRAY_STAINED_GLASS_PANE);
 	}
 	
 	public GUI(String name, Inventory design) {
-		this(name, design, (short) 7);
+		this(name, design, Material.GRAY_STAINED_GLASS_PANE);
 	}
 	
-	public GUI(Inventory design, @Nonnegative short nColor) {
-		this(design.getName(), design, nColor);
+	public GUI(Inventory design, Material background) {
+		this(null, design, background);
 	}
 	
-	public GUI(String name, Inventory design, @Nonnegative short nColor) {
-		this(name, design, nColor, null);
+	public GUI(String name, Inventory design, Material background) {
+		this(name, design, background, null);
 	}
 	
-	public GUI(String name, Inventory design, @Nonnegative short nColor, Consumer<GUICloseEvent> event) {
+	public GUI(String name, Inventory design, Material background, Consumer<GUICloseEvent> event) {
 		this();
 		// Validate
 		Validate.notNull(design, "Inventory-Design cannot be null");
 		// reinitialize n
-		this.n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, nColor, ChatColor.translateAlternateColorCodes('&', "&7"));
+		this.n = ItemStackAPI.createItemStack(background, 1, ChatColor.translateAlternateColorCodes('&', "&7"));
 		// initialize design and slot for Buttons
-		this.design = Bukkit.createInventory(null, design.getSize(), name != null ? name : design.getTitle());
+		this.design = Bukkit.createInventory(null, design.getSize(), name);
+		this.name = name;
 		functions = new ArrayList<>(design.getSize());
 		this.closeFunction = event;
 		// apply design
@@ -109,7 +111,7 @@ public class GUI {
 	 * @param base the original gui 
 	 */
 	public GUI(GUI base) {
-		this(base.design.getName(), base.design, base.n.getDurability(), base.closeFunction);
+		this(base.getName(), base.design, base.n.getType(), base.closeFunction);
 	}
 	
 	/**
@@ -125,7 +127,7 @@ public class GUI {
 	 * @return the title
 	 */
 	public String getName() {
-		return design.getName();
+		return name;
 	}
 	
 	/**
@@ -451,22 +453,11 @@ public class GUI {
 		 * This constructor creates a new Button
 		 * @param type the Material of this Button
 		 * @param amount the amount of this Button
-		 * @param damage the subID of this Button
-		 * @param click what happens if the player clicks this button
-		 */
-		public Button(Material type, int amount, short damage, Consumer<ButtonClickEvent> click) {
-			super(type, amount, damage);
-			this.consumer = click;
-		}
-
-		/**
-		 * This constructor creates a new Button with the subID 0
-		 * @param type the Material of this Button
-		 * @param amount the amount of this Button
 		 * @param click what happens if the player clicks this button
 		 */
 		public Button(Material type, int amount, Consumer<ButtonClickEvent> click) {
-			this(type, amount, (short) 0, click);
+			super(type, amount);
+			this.consumer = click;
 		}
 
 		/**

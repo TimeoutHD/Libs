@@ -7,8 +7,8 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.logging.Level;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.craftbukkit.libs.org.apache.commons.lang3.ArrayUtils;
 import org.bukkit.entity.Player;
 
 import com.mojang.authlib.GameProfile;

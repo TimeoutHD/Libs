@@ -49,78 +49,15 @@ public final class ItemStackAPI {
 	}
 	
 	/**
-	 * This method creates an ItemStack with subid 0 and an amount of 1
-	 * @param id the ID of the ItemStack
-	 * @return your itemstack
-	 * @deprecated Magic keys are no longer supported
-	 */
-	@Deprecated
-	public static ItemStack createItemStack(int id) {
-		return createItemStack(id, (short) 0);
-	}
-	
-	/**
-	 * This method creates an ItemStack with the amount of 1
-	 * @param id the ID of the ItemStack
-	 * @param damage the damage / subid of your itemstack
-	 * @param amount the amount of your itemstack. Can be negative, so be careful with negative values
-	 * @param displayName the name of the itemstack. ColorCodes are written with '&'
-	 * @return your itemstack
-	 * @deprecated Magic keys are no longer supported
-	 */
-	public static ItemStack createItemStack(int id, short damage) {
-		return createItemStack(id, damage, 1);
-	}
-	
-	/**
-	 * This method creates an ItemStack without a displayname
-	 * @param id the ID of the ItemStack
-	 * @param damage the damage / subid of your itemstack
-	 * @param amount the amount of your itemstack. Can be negative, so be careful with negative values
-	 * @return your itemstack
-	 * @deprecated Magic keys are no longer supported
-	 */
-	@Deprecated
-	public static ItemStack createItemStack(int id, short damage, int amount) {
-		return createItemStack(id, damage, amount, null);
-	}
-	
-	/**
 	 * This method creates an ItemStack
-	 * @param id the ID of the ItemStack
-	 * @param damage the damage / subid of your itemstack
-	 * @param amount the amount of your itemstack. Can be negative, so be careful with negative values
-	 * @param displayName the name of the itemstack. ColorCodes are written with '&'
-	 * @return your itemstack
-	 * @deprecated Magic keys are no longer supported
-	 */
-	@Deprecated
-	public static ItemStack createItemStack(int id, short damage, int amount, String displayName) {
-		return createItemStack(Material.getMaterial(id), amount, damage, displayName);
-	}
-
-	/**
-	 * This method creates an ItemStack.
 	 * @param material the material of your ItemStack
-	 * @param amount the amount of your ItemStack. Can be negative, so be careful with negative values
+	 * @param amount the amount of your itemstack. Can be negative, so be careful with negative values
 	 * @param displayName the name of the ItemStack. ColorCodes are written with '&'
 	 * @return the itemstack
 	 */
 	public static ItemStack createItemStack(Material material, int amount, String displayName) {
-		return createItemStack(material, amount, (short) 0, displayName);
-	}
-	
-	/**
-	 * This method creates an ItemStack
-	 * @param material the material of your ItemStack
-	 * @param amount the amount of your itemstack. Can be negative, so be careful with negative values
-	 * @param damage the Damage / SubID of your ItemStack
-	 * @param displayName the name of the ItemStack. ColorCodes are written with '&'
-	 * @return the itemstack
-	 */
-	public static ItemStack createItemStack(Material material, int amount, short damage, String displayName) {
 		// Create ItemStack
-		ItemStack item = new ItemStack(material, amount, damage);
+		ItemStack item = new ItemStack(material, amount);
 		
 		// Set DisplayName with ColorCode if displayName is not null
 		if(displayName != null) {
@@ -144,25 +81,15 @@ public final class ItemStackAPI {
 		return createItemStack(material, 1, null);
 	}
 	
-	/**
-	 * This method creates an ItemStack without a displayname
-	 * @param material the material of the itemstack
-	 * @param amount the amount 
-	 * @return the itemstack
-	 */
-	public static ItemStack createItemStack(Material material, int amount) {
-		return createItemStack(material, amount, null);
-	}
 		
 	/**
 	 * This method creates an ItemStack without a displayname
 	 * @param material the material of the itemstack
 	 * @param amount the amount
-	 * @param damage the Damage / SubID of your ItemStack
 	 * @return the itemstack
 	 */
-	public static ItemStack createItemStack(Material material, int amount, short damage) {
-		return createItemStack(material, amount, damage, null);
+	public static ItemStack createItemStack(Material material, int amount) {
+		return createItemStack(material, amount, null);
 	}
 
 	/**
@@ -327,7 +254,7 @@ public final class ItemStackAPI {
 				Object compound = itemstackClass.getMethod(GET_TAG).invoke(nmsCopy);
 				// return int value
 				return (int) nbttagcompoundClass.getMethod("getInt", String.class).invoke(compound, key);
-			} else throw new NullPointerException(ERROR_NO_NBT_TAG);
+			} else throw new IllegalArgumentException(ERROR_NO_NBT_TAG);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
 				| SecurityException e) {
 			Bukkit.getLogger().log(Level.SEVERE, ERROR_FAILED_GET_NBT_TAG + key);
@@ -347,7 +274,7 @@ public final class ItemStackAPI {
 				Object compound = itemstackClass.getMethod(GET_TAG).invoke(nmsCopy);
 				// return int value
 				return (String) nbttagcompoundClass.getMethod("getString", String.class).invoke(compound, key);
-			} else throw new NullPointerException(ERROR_NO_NBT_TAG);
+			} else throw new IllegalArgumentException(ERROR_NO_NBT_TAG);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
 				| SecurityException e) {
 			Bukkit.getLogger().log(Level.SEVERE, ERROR_FAILED_GET_NBT_TAG + key);
@@ -367,7 +294,7 @@ public final class ItemStackAPI {
 				Object compound = itemstackClass.getMethod(GET_TAG).invoke(nmsCopy);
 				// return int value
 				return (boolean) nbttagcompoundClass.getMethod("getBoolean", String.class).invoke(compound, key);
-			} else throw new NullPointerException(ERROR_NO_NBT_TAG);
+			} else throw new IllegalArgumentException(ERROR_NO_NBT_TAG);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
 				| SecurityException e) {
 			Bukkit.getLogger().log(Level.SEVERE, ERROR_FAILED_GET_NBT_TAG + key);

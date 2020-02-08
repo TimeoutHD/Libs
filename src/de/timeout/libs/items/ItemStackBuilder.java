@@ -47,14 +47,16 @@ public class ItemStackBuilder {
 		this.currentBuilding = base.clone();
 	}
 	
-	@Deprecated
-	public ItemStackBuilder(int id) {
-		this.currentBuilding = ItemStackAPI.createItemStack(id);
-	}
-	
-	@Deprecated
-	public ItemStackBuilder(int id, short subid) {
-		this.currentBuilding = ItemStackAPI.createItemStack(id, subid);
+	/**
+	 * This method sets the type of the Material
+	 * @param material the new material of the itemstack
+	 * @return the builder to contiunue
+	 */
+	public ItemStackBuilder setType(Material material) {
+		this.currentBuilding.setType(material);
+		
+		// return this to continue
+		return this;
 	}
 	
 	/**
@@ -63,18 +65,6 @@ public class ItemStackBuilder {
 	 */
 	public ItemStack toItemStack() {
 		return currentBuilding;
-	}
-	
-	/**
-	 * This method sets a new durability for the item
-	 * @param damage the duratibiliy
-	 * @return the builder to continue
-	 */
-	public ItemStackBuilder setDurability(short damage) {
-		// set damage
-		currentBuilding.setDurability(damage);
-		// return this to continue
-		return this;
 	}
 	
 	/**
