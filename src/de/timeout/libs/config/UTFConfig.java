@@ -1,5 +1,6 @@
 package de.timeout.libs.config;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -12,10 +13,9 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
@@ -25,12 +25,15 @@ import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.representer.Representer;
 
+import com.github.difflib.DiffUtils;
+import com.github.difflib.algorithm.DiffException;
+import com.github.difflib.patch.AbstractDelta;
+import com.github.difflib.patch.DeltaType;
+import com.github.difflib.patch.Patch;
+import com.github.difflib.patch.PatchFailedException;
 import com.google.common.io.Files;
 
 import de.timeout.libs.Reflections;
-import de.timeout.libs.config.Diff3Utils.Diff;
-import de.timeout.libs.config.Diff3Utils.Operation;
-import de.timeout.libs.config.Diff3Utils.Patch;
 
 /**
  * This class represents a Yaml Document with UTF-8 Coding
@@ -45,10 +48,8 @@ public class UTFConfig extends YamlConfiguration {
 	private static final Field optionField = Reflections.getField(YamlConfiguration.class, "yamlOptions");
 	private static final Field representerField = Reflections.getField(YamlConfiguration.class, "yamlRepresenter");
 	private static final Field yamlField = Reflections.getField(YamlConfiguration.class, "yaml");
-	
-	private static final Diff3Utils diff3Utils = new Diff3Utils();
-	
-	private List<String> fileLines;
+		
+	private final List<String> original = new ArrayList<>();
 			
 	/**
 	 * Create a UTF-Config of a File
@@ -57,7 +58,7 @@ public class UTFConfig extends YamlConfiguration {
 	public UTFConfig(File file) {	
 		try {	
 			// read file lines
-			this.fileLines = Files.readLines(file, StandardCharsets.UTF_8);
+			this.original.addAll(Files.readLines(file, StandardCharsets.UTF_8));
 			// load Config from file content
 			load(file);
 		} catch (IOException | InvalidConfigurationException e) {
@@ -73,6 +74,7 @@ public class UTFConfig extends YamlConfiguration {
 	@Deprecated
 	public UTFConfig(InputStream stream) {
 		try {
+			this.original.addAll(new BufferedReader(new InputStreamReader(stream)).lines().parallel().collect(Collectors.toList()));
 			// load Config from InputStream
 			load(stream);
 		} catch (IOException | InvalidConfigurationException e) {
@@ -121,7 +123,7 @@ public class UTFConfig extends YamlConfiguration {
 
 			String valueDump = yaml.dump(this.getValues(false)).replaceAll("\\{\\}\n", "");
 			
-			return addComments(valueDump);
+			return diff3(valueDump);
 		} else throw new IllegalArgumentException("Could not load required attributes from Configuration");
 	}
 	
@@ -147,58 +149,84 @@ public class UTFConfig extends YamlConfiguration {
 		this.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
 	}
 	
-	private String addComments(String valueDump) {
-		String commentDumpWithDefaultValues = String.join("\n", fileLines);
+	private String diff3(String dump) {
+		// get List
+		List<String> dumpList = Arrays.asList(dump.split("\n"));
 		
-		// use diff 2 on keyDump and Comments
-		LinkedList<Diff> diffs = diff3Utils.diff_main(valueDump, commentDumpWithDefaultValues);
-		diff3Utils.diff_cleanupSemantic(diffs);
-		diff3Utils.diff_cleanupEfficiency(diffs);
-		
-		ListIterator<Diff> iter = diffs.listIterator();
-		Diff previous = null;
-		while(iter.hasNext()) {
-			// get next
-			Diff diff = iter.next();
-			// if something with comment will be set
-			if(diff.operation == Operation.INSERT ) {
-				if(diff.text.contains("#")) {
-					// if previous operation was deletion
-					if(previous != null && previous.operation == Operation.DELETE) {
-						List<String> insertion = new ArrayList<>(Arrays.asList(diff.text.split("\n")));
-						List<String> values = new ArrayList<>(Arrays.asList(previous.text.split("\n")));
-							
-						for(int i = 0; i < insertion.size(); i++) {
-							// if line is a value line
-							if(!insertion.get(i).contains("#")) insertion.set(i, getValue(insertion.get(i), values));
-						}
-						diff.text = String.join("\n", insertion);
-					}
-				} else if(previous != null && previous.operation == Operation.DELETE) {
-					// An old value is about to be set in. Must be canceled
-					// set new value in old field
-					diff.text = previous.text;			
+		try {
+			// generating diff information
+			Patch<String> diff = DiffUtils.diff(original, dumpList);
+			
+			// run though changes
+			for(AbstractDelta<String> delta : new ArrayList<>(diff.getDeltas())) {
+				// copy targetList and sourceList
+				List<String> targetCopy = new ArrayList<>(delta.getTarget().getLines());
+				List<String> sourceCopy = new ArrayList<>(delta.getSource().getLines());
+				// check if delta is change delta
+				if(delta.getType() == DeltaType.DELETE) {
+					// remove comment changes
+					removeCommentChanges(sourceCopy);
+					// apply
+					if(!sourceCopy.isEmpty()) {
+						delta.getSource().setLines(sourceCopy);
+					} else diff.getDeltas().remove(delta);
+				} else if(delta.getType() == DeltaType.CHANGE) {
+					// update changes
+					applyCommentInsertion(sourceCopy, targetCopy);
+					// remove comment changes
+					delta.getTarget().setLines(targetCopy);
 				}
 			}
-			// set previous
-			previous = diff;
+			// apply patch and return
+			return String.join("\n", DiffUtils.patch(original, diff).toArray(new String[0]));
+		} catch (DiffException | PatchFailedException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Cannot compute changes. Load old values. Please report this error", e);
 		}
-		
-		LinkedList<Patch> patches = diff3Utils.patch_make(valueDump, diffs);
-		
-		// return commentKey
-		return (String) diff3Utils.patch_apply(patches, valueDump)[0];
+		// return dump after error
+		return dump;
 	}
 	
-	private String getValue(String line, List<String> values) {
-		if(line.contains(":") || line.trim().isEmpty() || line.trim().equals("'") || line.trim().equals("\"")) {
-			// get key
-			String key = line.split(":")[0];
-			// find line with that value
-			for(int i = 0; i < values.size(); i++) {
-				if(values.get(i).split(":")[0].equals(key)) return values.remove(i);
+	/**
+	 * Removes all Deltas which delete comments in File
+	 * @param list the list of changes (sources)
+	 */
+	private static void removeCommentChanges(List<String> list) {
+		// remove all comments
+		list.removeIf(filter -> filter.trim().isEmpty() || filter.trim().startsWith("#"));
+		// run through lines
+		for(int i = 0; i < list.size(); i++) {
+			// get Line
+			String line = list.get(i);
+			// if comment is on this line
+			int commentStart = line.indexOf('#');
+			if(commentStart != -1) {
+				// replace comment change
+				list.set(i, line.substring(0, commentStart -1));
 			}
-			return line;
-		} else return values.get(0);
+		}
+	}
+	
+	/**
+	 * Merges all comments in Change-Delta into list target
+	 * @param source the line before change
+	 * @param target the changes itself
+	 */
+	private static void applyCommentInsertion(List<String> source, List<String> target) {
+		// iterate through source
+		for(int i = 0; i < source.size(); i++) {
+			String line = source.get(i);
+			// if this is a comment line
+			if(line.trim().isEmpty() || line.trim().startsWith("#")) {
+				// add value to target list
+				target.add(i, line);
+			} else {
+				// check if value has a comment inside
+				int commentBegin = line.indexOf('#');
+				if(commentBegin != -1) {
+					// add comment to target list
+					target.set(i, target.get(i) + line.substring(commentBegin));
+				}
+			}
+		}
 	}
 }
