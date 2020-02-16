@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 import javax.annotation.Nonnull;
@@ -58,7 +61,6 @@ public class JsonConfig extends FileConfiguration {
 			Bukkit.getLogger().log(Level.SEVERE, "Cannot load Configuration from InputStream", e);			
 		} catch (IOException e) {
 			Bukkit.getLogger().log(Level.SEVERE, "Cannot load Json from InputStream. IO-Exception: ", e);
-
 		}
 	}
 
@@ -68,11 +70,16 @@ public class JsonConfig extends FileConfiguration {
 		JsonElement data = PARSER.parse(arg0);
 		// if data is not a JSON-Object
 		if(!data.isJsonObject()) {
-			// run though data
-			data.getAsJsonObject().entrySet().forEach(entry -> {
-				// add default values
-				
-			});
+			// create map of data
+			Map<String, JsonElement> input = new HashMap<>();
+			// add all values to map
+			((JsonObject) data).entrySet().forEach(entry -> input.put(entry.getKey(), entry.getValue()));
+			
+			// check input
+			if(input.isEmpty()) {
+				// convert data
+				convertMapToSection(this, input);
+			}
 		} else throw new InvalidConfigurationException("A JsonConfig must be a JsonObject!");
 	}
 
@@ -88,7 +95,7 @@ public class JsonConfig extends FileConfiguration {
 		return obj.toString();
 	}
 	
-	private JsonObject convertSectionToObject(ConfigurationSection section) {
+	private static JsonObject convertSectionToObject(ConfigurationSection section) {
 		// create JsonObject
 		JsonObject object = new JsonObject();
 		// run through section
@@ -111,6 +118,8 @@ public class JsonConfig extends FileConfiguration {
 					else if(element instanceof Number) list.add(new JsonPrimitive((Number) element));
 					// check for character
 					else if(element instanceof Character) list.add(new JsonPrimitive((Character) element));
+					// check for configurationsections
+					else if(element instanceof ConfigurationSection) list.add(convertSectionToObject((ConfigurationSection) element));
 				});
 				// add list to object
 				object.add(key, list);
@@ -130,5 +139,78 @@ public class JsonConfig extends FileConfiguration {
 		});
 		// return object
 		return object;
+	}
+	
+	private static void convertMapToSection(ConfigurationSection section, Map<String, JsonElement> input) {
+		// run through sections
+		input.entrySet().forEach(entry -> {
+			// get Key and value
+			String key = entry.getKey();
+			JsonElement value = entry.getValue();
+			// validate value
+			if(entry.getValue() instanceof JsonObject) {
+				// is configurationsection
+				convertMapToSection(section.createSection(key), convertObjectToMap((JsonObject) value));
+			} else if(value instanceof JsonPrimitive) {
+				// is a property
+				section.set(key, convertPrimitive((JsonPrimitive) value));
+			} else if(value instanceof JsonArray) {
+				// is a list
+				section.set(key, convertArrayToList(section.createSection(key), (JsonArray) value));
+			}
+		});
+	}
+	
+	private static Map<String, JsonElement> convertObjectToMap(JsonObject object) {
+		// create new Map
+		Map<String, JsonElement> map = new HashMap<>();
+		// add entrys to map
+		object.entrySet().forEach(entry -> map.put(entry.getKey(), entry.getValue()));
+		// return map
+		return map;
+	}
+	
+	private static Object convertPrimitive(JsonPrimitive primitive) {
+		// check data
+		if(primitive.isBoolean()) return primitive.getAsBoolean();
+		else if(primitive.isNumber()) return primitive.getAsNumber();
+		else return primitive.getAsString();
+	}
+	
+	/**
+	 * Converts a JsonArray into an ArrayList
+	 * @param section
+	 * @param data
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	private static List<?> convertArrayToList(ConfigurationSection section, JsonArray data) {
+		// create List
+		List<?> list = new ArrayList<>();
+		// run through data
+		for(int i = 0; i < data.size(); i++) {
+			// get element
+			JsonElement element = data.get(i);
+			// check if data is
+			if(data.isJsonObject()) {
+				// create configuration section
+				ConfigurationSection subSection = section.createSection(String.valueOf(i));
+				// fill section with data
+				convertMapToSection(subSection, convertObjectToMap((JsonObject) element));
+				// add to list
+				((List<ConfigurationSection>) list).add(subSection);
+			} else if(data.isJsonArray()) {
+				// is another list
+				((List<List<?>>) list).add(convertArrayToList(section.createSection(String.valueOf(i)), (JsonArray) element));
+			} else if(data.isJsonNull()) {
+				// is null
+				list.add(null);
+			} else {
+				// is primitive
+				((List<Object>) list).add((Object) convertPrimitive((JsonPrimitive) element));
+			}
+		}
+		// return list
+		return list;
 	}
 }
