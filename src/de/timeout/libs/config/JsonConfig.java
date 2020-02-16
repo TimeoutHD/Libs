@@ -27,10 +27,22 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
+/**
+ * Represents a FileConfiguration which is written in JSON
+ * 
+ * @author Timeout
+ *
+ */
 public class JsonConfig extends FileConfiguration {
 	
 	private static final JsonParser PARSER = new JsonParser();
 		
+	/**
+	 * Creates a new JsonConfiguration from a Json-String
+	 * 
+	 * @param json the Json-String. Cannot be null
+	 * @throws IllegalArgumentException if the Json-String is null
+	 */
 	public JsonConfig(String json) {
 		Validate.notNull(json, "Json-Data cannot be null");
 		try {
@@ -40,6 +52,12 @@ public class JsonConfig extends FileConfiguration {
 		}
 	}
 	
+	/**
+	 * Creates a new JsonConfiguration from a File
+	 * 
+	 * @param json the .json file
+	 * @throws IllegalArgumentException if the file is null
+	 */
 	public JsonConfig(File json) {
 		// read from File
 		Validate.notNull(json, "File cannot be null");
@@ -95,53 +113,82 @@ public class JsonConfig extends FileConfiguration {
 		return obj.toString();
 	}
 	
+	/**
+	 * Converts a ConfigurationSection to JsonObject
+	 * @author Timeout
+	 * 
+	 * @param section the section you want to convert. Cannot be null
+	 * @throws IllegalArgumentException if the section is null
+	 * @return the converted section as JsonObject
+	 */
+	@Nonnull
 	private static JsonObject convertSectionToObject(ConfigurationSection section) {
+		// Validate
+		Validate.notNull(section, "Section cannot be null");
 		// create JsonObject
-		JsonObject object = new JsonObject();
+		JsonObject obj = new JsonObject();
 		// run through section
 		section.getKeys(false).forEach(key -> {
-			// get Value
-			Object value = section.get(key);
-			// check if value is another section
-			if(value instanceof ConfigurationSection) {
-				// call recursive
-				object.add(key, convertSectionToObject((ConfigurationSection) value));
-			} else if(value instanceof List) {
-				// convert to JsonArray
-				JsonArray list = new JsonArray();
-				((List<?>)value).forEach(element -> {
-					// check for string
-					if(element instanceof String) list.add(new JsonPrimitive((String) element));
-					// check for boolean
-					else if(element instanceof Boolean) list.add(new JsonPrimitive((Boolean) element));
-					// check for number
-					else if(element instanceof Number) list.add(new JsonPrimitive((Number) element));
-					// check for character
-					else if(element instanceof Character) list.add(new JsonPrimitive((Character) element));
-					// check for configurationsections
-					else if(element instanceof ConfigurationSection) list.add(convertSectionToObject((ConfigurationSection) element));
-				});
-				// add list to object
-				object.add(key, list);
-			} else if(value instanceof String) {
-				// add string property
-				object.addProperty(key, (String) value);
-			} else if(value instanceof Number) {
-				// add number property
-				object.addProperty(key, (Number) value);
-			} else if(value instanceof Boolean) {
-				// add boolean property
-				object.addProperty(key, (Boolean) value);
-			} else if(value instanceof Character) {
-				// add character property
-				object.addProperty(key, (Character) value);
+			// check values data type
+			if(section.isConfigurationSection(key)) {
+				// is configurationsection
+				// convert section and add to this obj
+				obj.add(key, convertSectionToObject(section.getConfigurationSection(key)));
+			} else if(section.isList(key)) {
+				// is list
+				// convert list to JsonArray and add it to obj
+				obj.add(key, convertListToArray(section.getList(key)));
+			} else if(section.get(key) != null) {
+				// key is primitive
+				obj.add(key, convertValueToPrimitive(section.get(key)));
 			}
 		});
-		// return object
-		return object;
+		return obj;
 	}
 	
+	/**
+	 * Converts a List into a JsonArray
+	 * 
+	 * @param list the list you want to convert
+	 * @return the list converted as JsonArray
+	 */
+	@Nonnull
+	private static JsonArray convertListToArray(List<?> list) {
+		// create JsonArray
+		JsonArray array = new JsonArray();
+		// run through array
+		list.forEach(element -> {
+			// check elements datatype
+			if(element instanceof ConfigurationSection) {
+				// convert to JsonObject and add it here
+				array.add(convertSectionToObject((ConfigurationSection) element));
+			} else if(element instanceof List) {
+				// convert to JsonArray and add it here
+				array.add(convertListToArray((List<?>) element));
+			} else if(element == null) {
+				// convert to JsonNull and add it here
+				array.add(null);
+			} else {
+				// add JsonPrimitive to array
+				array.add(convertValueToPrimitive(element));
+			}
+		});
+		// return array
+		return array;
+	}
+	
+	/**
+	 * Converts a Map into a ConfigurationSection and links it to its root
+	 * 
+	 * @param section the root of the Map
+	 * @param input the converted JsonObject
+	 * @throws IllegalArgumentException if section or input is null
+	 */
+	@Nonnull
 	private static void convertMapToSection(ConfigurationSection section, Map<String, JsonElement> input) {
+		// Validate
+		Validate.notNull(section, "Root-Section cannot be null");
+		Validate.notNull(input, "Input cannot be null");
 		// run through sections
 		input.entrySet().forEach(entry -> {
 			// get Key and value
@@ -161,6 +208,14 @@ public class JsonConfig extends FileConfiguration {
 		});
 	}
 	
+	/**
+	 * Converts a JsonObject to a Map with property key and JsonElement value
+	 * 
+	 * @param object the JsonObject you want to convert. Cannot be null
+	 * @throws IllegalArgumentException if the JsonObject is null
+	 * @return the converted JsonObject into a Map
+	 */
+	@Nonnull
 	private static Map<String, JsonElement> convertObjectToMap(JsonObject object) {
 		// create new Map
 		Map<String, JsonElement> map = new HashMap<>();
@@ -170,7 +225,17 @@ public class JsonConfig extends FileConfiguration {
 		return map;
 	}
 	
+	/**
+	 * Converts a JsonPrimitive to an Object
+	 * 
+	 * @param primitive the primitive you want to convert. Cannot be null
+	 * @throws IllegalArgumentException if the primitive is null
+	 * @return the value as Object (Wrapper)
+	 */
+	@Nonnull
 	private static Object convertPrimitive(JsonPrimitive primitive) {
+		// Validate
+		Validate.notNull(primitive, "Data cannot be a JsonNull");
 		// check data
 		if(primitive.isBoolean()) return primitive.getAsBoolean();
 		else if(primitive.isNumber()) return primitive.getAsNumber();
@@ -178,13 +243,37 @@ public class JsonConfig extends FileConfiguration {
 	}
 	
 	/**
+	 * Converts a value in a JsonPrmitive
+	 * 
+	 * @param value the value you want to convert. It cannot be null
+	 * @throws IllegalArgumentException if the value is null
+	 * @return the converted JsonPrimitive
+	 */
+	@Nonnull
+	private static JsonPrimitive convertValueToPrimitive(Object value) {
+		// Validate
+		Validate.notNull(value, "Value cannot be null");
+		// convert into right datatype
+		if(value instanceof Boolean) return new JsonPrimitive((Boolean) value);
+		else if(value instanceof Number) return new JsonPrimitive((Number) value);
+		else if(value instanceof Character) return new JsonPrimitive((Character) value);
+		else return new JsonPrimitive((String) value);
+	}
+	
+	/**
 	 * Converts a JsonArray into an ArrayList
-	 * @param section
-	 * @param data
-	 * @return
+	 * 
+	 * @param section the Root-Section. Cannot be null
+	 * @param data the data you want to convert. Cannot be null
+	 * @throws IllegalArgumentException if any argument is null
+	 * @return the data converted as list
 	 */
 	@SuppressWarnings("unchecked")
+	@Nonnull
 	private static List<?> convertArrayToList(ConfigurationSection section, JsonArray data) {
+		// Validate
+		Validate.notNull(section, "Root-Section cannot be null");
+		Validate.notNull(data, "JsonArray cannot be null");
 		// create List
 		List<?> list = new ArrayList<>();
 		// run through data

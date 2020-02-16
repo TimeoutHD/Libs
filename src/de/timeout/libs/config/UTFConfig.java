@@ -1,6 +1,5 @@
 package de.timeout.libs.config;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -15,8 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -69,16 +68,18 @@ public class UTFConfig extends YamlConfiguration {
 	/**
 	 * Create a UTF-Config of an InputStream
 	 * @param stream the used inputsteam
-	 * @deprecated will be removed if {@link YamlConfiguration#load(InputStream)} don't exist
+	 * @throws IOException If the stream cannot be read
 	 */
-	@Deprecated
-	public UTFConfig(InputStream stream) {
+	public UTFConfig(InputStream stream) throws IOException {
+		this(IOUtils.toString(stream));
+	}
+	
+	public UTFConfig(String source) {
 		try {
-			this.original.addAll(new BufferedReader(new InputStreamReader(stream)).lines().parallel().collect(Collectors.toList()));
-			// load Config from InputStream
-			load(stream);
+			this.original.addAll(Arrays.asList(source.split("\n")));
+			load(source);
 		} catch (IOException | InvalidConfigurationException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Could not load Configuration from InputStream", e);
+			Bukkit.getLogger().log(Level.WARNING, "Could not load Configuration from String", e);
 		}
 	}
 
