@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -36,6 +39,9 @@ import com.google.gson.JsonPrimitive;
 public class JsonConfig extends FileConfiguration {
 	
 	private static final JsonParser PARSER = new JsonParser();
+	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	
+	private final List<String> original = new ArrayList<>();
 		
 	/**
 	 * Creates a new JsonConfiguration from a Json-String
@@ -84,6 +90,10 @@ public class JsonConfig extends FileConfiguration {
 
 	@Override
 	public void loadFromString(@Nonnull String arg0) throws InvalidConfigurationException {
+		// Validate
+		Validate.notNull(arg0, "String cannot be null");
+		// initialize original
+		original.addAll(Arrays.asList(arg0.split("\n")));
 		// load data
 		JsonElement data = PARSER.parse(arg0);
 		// if data is not a JSON-Object
@@ -110,7 +120,7 @@ public class JsonConfig extends FileConfiguration {
 	public String saveToString() {
 		// create JsonObject
 		JsonObject obj = convertSectionToObject(this);
-		return obj.toString();
+		return MyersDiffUtils.diff3(original, GSON.toJson(obj));
 	}
 	
 	/**
