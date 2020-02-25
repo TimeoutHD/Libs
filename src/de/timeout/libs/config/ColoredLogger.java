@@ -2,9 +2,8 @@ package de.timeout.libs.config;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.bukkit.Bukkit;
 
@@ -20,7 +19,7 @@ public class ColoredLogger {
 	private static final String FORMAT_PATTERN = "\u001b[%dm";
 	
 	private String prefix;
-	private char colorFormatter = '&';
+	private char colorFormatter;
 	
 	/**
 	 * Creates a new ColoredLogger
@@ -38,7 +37,7 @@ public class ColoredLogger {
 	 * @param prefix the prefix of the plugin with color char '&'
 	 */
 	public ColoredLogger(String prefix) {
-		this.prefix = prefix;
+		this(prefix, '&');
 	}
 	
 	/**
@@ -49,7 +48,7 @@ public class ColoredLogger {
 	 * @param colorFormatter the color char which should replaced while converting
 	 */
 	public ColoredLogger(String prefix, char colorFormatter) {
-		this.prefix = prefix;
+		this.prefix = convertStringMessage(prefix, colorFormatter);
 		this.colorFormatter = colorFormatter;
 	}
 	
@@ -112,18 +111,16 @@ public class ColoredLogger {
 		if(message != null && !message.isEmpty()) {
 			// copy of string
 			String messageCopy = String.copyValueOf(message.toCharArray());
-			// run through message
-			int index = 0;
-			// while index is valid (max prelast char and not -1 for not found)
-			while(index < (messageCopy.length() - 1) && (index = messageCopy.indexOf(index, colorFormatter)) != -1) {
-				// get colorSet
-				char code = message.charAt(index++);
-				// check if a color exists
-				ConsoleColor color = ConsoleColor.getColorByCode(code);
-				if(color != null) {
-					// replace all in color
-					messageCopy = messageCopy.replace(String.valueOf(new char[] {colorFormatter, code} ), color.getAnsiColor());
-				}
+			// create Matcher to search for colorcodes
+			Matcher matcher = Pattern.compile(String.format("/(%c[0-9a-fk-or])(?!.*\1)/g", colorFormatter)).matcher(message);
+			// run through result
+			while(matcher.find()) {
+				// get Result
+				String result = matcher.group(1);
+				// get ColorCode
+				ConsoleColor color = ConsoleColor.getColorByCode(result.charAt(1));
+				// replace color
+				messageCopy = messageCopy.replace(result, color.getAnsiColor());
 			}
 			// return converted String
 			return messageCopy;
@@ -177,7 +174,6 @@ public class ColoredLogger {
 		 * @param code the Minecraft-ColorCode without Formatter-Char
 		 * @return the Color enum or null if no enum can be found
 		 */
-		@Nullable
 		public static ConsoleColor getColorByCode(char code) {
 			// run trough colors
 			for(ConsoleColor color: values()) {
@@ -185,7 +181,7 @@ public class ColoredLogger {
 				if(color.bukkitColor == code) return color;
 			}
 			// return null for not found
-			return null;
+			throw new IllegalArgumentException("Color with code " + code + " does not exists");
 		}
 		
 		/**
@@ -194,7 +190,6 @@ public class ColoredLogger {
 		 * 
 		 * @return the Ansi-ColorCode
 		 */
-		@Nonnull
 		public String getAnsiColor() {
 			return ansiColor;
 		}
