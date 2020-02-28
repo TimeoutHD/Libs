@@ -306,7 +306,7 @@ public class JsonConfig extends FileConfiguration {
 				list.add(null);
 			} else {
 				// is primitive
-				((List<Object>) list).add((Object) convertPrimitive((JsonPrimitive) element));
+				((List<Object>) list).add(convertPrimitive((JsonPrimitive) element));
 			}
 		}
 		// return list

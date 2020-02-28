@@ -1,5 +1,6 @@
 package de.timeout.libs.config;
 
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -95,6 +96,18 @@ public class ColoredLogger {
 	 */
 	public void log(Level level, String message, Throwable e) {
 		LOGGER.log(level, prefix + convertStringMessage(message, colorFormatter), e);
+	}
+	
+	/**
+	 * Logs a message in console. See {@link Logger#log(Level, String)}
+	 * The message will be converted in ColoredStrings with the prefix
+	 * @author Timeout
+	 * 
+	 * @param level the level of the log
+	 * @param message the message you want to show
+	 */
+	public void log(Level level, Supplier<String> msgSupplier) {
+		LOGGER.log(level, msgSupplier);
 	}
 	
 	/**
