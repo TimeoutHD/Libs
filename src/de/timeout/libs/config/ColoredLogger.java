@@ -107,7 +107,7 @@ public class ColoredLogger {
 	 * @param message the message you want to show
 	 */
 	public void log(Level level, Supplier<String> msgSupplier) {
-		LOGGER.log(level, msgSupplier);
+		LOGGER.log(level, () -> prefix + convertStringMessage(msgSupplier.get(), colorFormatter));
 	}
 	
 	/**
@@ -123,9 +123,9 @@ public class ColoredLogger {
 		// Continur if String is neither not null nor empty
 		if(message != null && !message.isEmpty()) {
 			// copy of string
-			String messageCopy = String.copyValueOf(message.toCharArray());
+			String messageCopy = String.copyValueOf(message.toCharArray()) + ConsoleColor.RESET.ansiColor;
 			// create Matcher to search for colorcodes
-			Matcher matcher = Pattern.compile(String.format("/(%c[0-9a-fk-or])(?!.*\1)/g", colorFormatter)).matcher(message);
+			Matcher matcher = Pattern.compile(String.format("(%c[0-9a-fk-or])(?!.*\1)", colorFormatter)).matcher(message);
 			// run through result
 			while(matcher.find()) {
 				// get Result

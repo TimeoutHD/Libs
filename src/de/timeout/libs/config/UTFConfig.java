@@ -71,8 +71,8 @@ public class UTFConfig extends YamlConfiguration {
 	public UTFConfig(String source) {
 		try {
 			this.original.addAll(Arrays.asList(source.split("\n")));
-			load(source);
-		} catch (IOException | InvalidConfigurationException e) {
+			loadFromString(source);
+		} catch (InvalidConfigurationException e) {
 			Bukkit.getLogger().log(Level.WARNING, "Could not load Configuration from String", e);
 		}
 	}
