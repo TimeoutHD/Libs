@@ -83,15 +83,12 @@ public class MySQL {
 	/**
 	 * Disconnect from a MySQL-Database if this object is connected
 	 * 
-	 * @return the result. true if the object is disconnected successful, false if the object isn't connected at all
+	 * @return the result. true if the object is disconnected successful, false if the connection is still open
 	 * @throws SQLException if there are unexpected errors
 	 */
 	public boolean disconnect() throws SQLException {
-		if(isConnected()) {
-			this.connection.close();
-			return true;
-		}
-		return false;
+		this.connection.close();
+		return !isConnected();
 	}
 	
 	/**

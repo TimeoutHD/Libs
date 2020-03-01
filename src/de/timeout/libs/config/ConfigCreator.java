@@ -7,19 +7,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import com.google.common.io.ByteStreams;
 
 public class ConfigCreator {
 	
-	private static final String ANSI_GREY = "\u001B[90m";
-	private static final String ANSI_LIME = "\u001B[92m";
-	private static final String ANSI_WHITE = "\u001B[97m";
-	private static final String ANSI_RESET = "\u001B[0m";
-
-	private static final String CONFIG_LOADED = ANSI_GREY + "[" + ANSI_LIME + "Out-Configuration" + ANSI_GREY + "] " + ANSI_LIME + "%f " + ANSI_WHITE + " is loaded " + ANSI_LIME + "sucessfully" + ANSI_WHITE + "." + ANSI_RESET;
-	private static final String CONFIG_GENERATE = ANSI_GREY + "[" + ANSI_LIME + "Out-Configuration" + ANSI_GREY + "] "+ ANSI_LIME + "%f " + ANSI_WHITE + "could not be found: " + ANSI_LIME + "Generate..." + ANSI_RESET;
+	private static final ColoredLogger logger = new ColoredLogger("&8[&aLibs&8] ");
 	
 	private File dataFolder;
 	private String assetsDirectory;
@@ -47,7 +40,7 @@ public class ConfigCreator {
 				ByteStreams.copy(in, out);
 			}
 		}
-		Logger.getGlobal().log(Level.INFO, () -> CONFIG_LOADED.replace("%f", configuration.getName()));
+		logger.log(Level.INFO, String.format("&7Loaded File %s &asuccessfully", configuration.getName()));
 		return configuration;
 	}
 	
@@ -61,7 +54,7 @@ public class ConfigCreator {
 	private File loadFile(String filePath) throws IOException {
 		File configFile = Paths.get(dataFolder.getAbsolutePath(), filePath).toFile();
 		if(configFile.getParentFile().mkdirs() || configFile.createNewFile()) 
-			Logger.getGlobal().log(Level.INFO, () -> CONFIG_GENERATE.replace("%f", configFile.getName()));
+			logger.log(Level.INFO, String.format("&7Created new file %s in datafolder", configFile.getName()));
 		
 		return configFile;
 	}
