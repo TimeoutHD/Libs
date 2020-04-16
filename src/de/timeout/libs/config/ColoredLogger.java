@@ -6,8 +6,6 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.bukkit.Bukkit;
-
 /**
  * Extends the normal Bukkit Logger to write Colors
  * @author Timeout
@@ -15,7 +13,7 @@ import org.bukkit.Bukkit;
  */
 public class ColoredLogger {
 
-	private static final Logger LOGGER = Bukkit.getLogger();
+	private static final Logger LOGGER = Logger.getGlobal();
 	private static final String COLOR_PATTERN = "\u001b[38;5;%dm";
 	private static final String FORMAT_PATTERN = "\u001b[%dm";
 	
