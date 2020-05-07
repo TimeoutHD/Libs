@@ -48,12 +48,37 @@ public class ItemStackBuilder {
 	}
 	
 	/**
+	 * Creates a new ItemStackBuilder
+	 * @author Timeout
+	 *
+	 * @param material the material of the itemstack
+	 * @param subid the subid of the itemstack
+	 */
+	public ItemStackBuilder(Material material, short subid) {
+		this.currentBuilding = new ItemStack(material, 1, subid);
+	}
+	
+	/**
 	 * This method sets the type of the Material
 	 * @param material the new material of the itemstack
 	 * @return the builder to contiunue
 	 */
 	public ItemStackBuilder setType(Material material) {
 		this.currentBuilding.setType(material);
+		
+		// return this to continue
+		return this;
+	}
+	
+	/**
+	 * This method sets the subid / durability of the ItemStack
+	 * @author Timeout
+	 * 
+	 * @param subid the new durability / subid
+	 * @return the builder to continue
+	 */
+	public ItemStackBuilder setSubID(short subid) {
+		this.currentBuilding.setDurability(subid);
 		
 		// return this to continue
 		return this;

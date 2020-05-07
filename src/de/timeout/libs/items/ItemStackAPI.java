@@ -55,9 +55,9 @@ public final class ItemStackAPI {
 	 * @param displayName the name of the ItemStack. ColorCodes are written with '&'
 	 * @return the itemstack
 	 */
-	public static ItemStack createItemStack(Material material, int amount, String displayName) {
+	public static ItemStack createItemStack(Material material, int amount, short subid, String displayName) {
 		// Create ItemStack
-		ItemStack item = new ItemStack(material, amount);
+		ItemStack item = new ItemStack(material, amount, subid);
 		
 		// Set DisplayName with ColorCode if displayName is not null
 		if(displayName != null) {
@@ -78,7 +78,7 @@ public final class ItemStackAPI {
 	 * @return the material of the itemstack
 	 */
 	public static ItemStack createItemStack(Material material) {
-		return createItemStack(material, 1, null);
+		return createItemStack(material, 1);
 	}
 	
 		
@@ -89,7 +89,20 @@ public final class ItemStackAPI {
 	 * @return the itemstack
 	 */
 	public static ItemStack createItemStack(Material material, int amount) {
-		return createItemStack(material, amount, null);
+		return createItemStack(material, amount, (short) 0);
+	}
+	
+	/**
+	 * This method creates an ItemStack without a displayname
+	 * @author Timeout
+	 * 
+	 * @param material the material of the itemstack
+	 * @param amount the amount
+	 * @param subid the subid of the itemstack
+	 * @return the itemstack
+	 */
+	public static ItemStack createItemStack(Material material, int amount, short subid) {
+		return createItemStack(material, amount, subid, null);
 	}
 
 	/**

@@ -69,27 +69,27 @@ public class GUI {
 	 * @param design
 	 */
 	public GUI(Inventory design) {
-		this(null, design, Material.GRAY_STAINED_GLASS_PANE);
+		this(null, design, Material.STAINED_GLASS_PANE, (short) 7);
 	}
 	
 	public GUI(String name, Inventory design) {
-		this(name, design, Material.GRAY_STAINED_GLASS_PANE);
+		this(name, design, Material.STAINED_GLASS_PANE, (short) 7);
 	}
 	
-	public GUI(Inventory design, Material background) {
-		this(null, design, background);
+	public GUI(Inventory design, Material background, short subid) {
+		this(null, design, background, subid);
 	}
 	
-	public GUI(String name, Inventory design, Material background) {
-		this(name, design, background, null);
+	public GUI(String name, Inventory design, Material background, short subid) {
+		this(name, design, background, subid, null);
 	}
 	
-	public GUI(String name, Inventory design, Material background, Consumer<GUICloseEvent> event) {
+	public GUI(String name, Inventory design, Material background, short subid, Consumer<GUICloseEvent> event) {
 		this();
 		// Validate
 		Validate.notNull(design, "Inventory-Design cannot be null");
 		// reinitialize n
-		this.n = ItemStackAPI.createItemStack(background, 1, ChatColor.translateAlternateColorCodes('&', "&7"));
+		this.n = ItemStackAPI.createItemStack(background, 1, subid, ChatColor.translateAlternateColorCodes('&', "&7"));
 		// initialize design and slot for Buttons
 		this.design = Bukkit.createInventory(null, design.getSize(), name);
 		this.name = name;
@@ -111,7 +111,7 @@ public class GUI {
 	 * @param base the original gui 
 	 */
 	public GUI(GUI base) {
-		this(base.getName(), base.design, base.n.getType(), base.closeFunction);
+		this(base.getName(), base.design, base.n.getType(), base.n.getDurability(), base.closeFunction);
 	}
 	
 	/**
