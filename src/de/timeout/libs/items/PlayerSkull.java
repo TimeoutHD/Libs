@@ -22,6 +22,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 
+import de.timeout.libs.BukkitReflections;
 import de.timeout.libs.Reflections;
 import de.timeout.libs.profiles.GameProfileFetcher;
 import net.md_5.bungee.api.ChatColor;
@@ -33,8 +34,8 @@ import net.md_5.bungee.api.ChatColor;
  */
 public class PlayerSkull extends ItemStack {
 	
-	private static final Class<?> craftmetaskullClass = Reflections.getCraftBukkitClass("inventory.CraftMetaSkull");
-	private static final Class<?> craftskullClass = Reflections.getCraftBukkitClass("block.CraftSkull");
+	private static final Class<?> craftmetaskullClass = BukkitReflections.getCraftBukkitClass("inventory.CraftMetaSkull");
+	private static final Class<?> craftskullClass = BukkitReflections.getCraftBukkitClass("block.CraftSkull");
 	
 	private static final Field metaProfileField = Reflections.getField(craftmetaskullClass, "profile");
 	private static final Field skullProfileField = Reflections.getField(craftskullClass, "profile");

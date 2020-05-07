@@ -18,6 +18,7 @@ import com.google.common.cache.LoadingCache;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService;
 
+import de.timeout.libs.BukkitReflections;
 import de.timeout.libs.Reflections;
 
 /**
@@ -28,7 +29,7 @@ import de.timeout.libs.Reflections;
  */
 public class GameProfileFetcher implements Supplier<GameProfile> {
 			
-	private static final Class<?> tileentityskullClass = Reflections.getNMSClass("TileEntitySkull");
+	private static final Class<?> tileentityskullClass = BukkitReflections.getNMSClass("TileEntitySkull");
 	
 	@SuppressWarnings("unchecked")
 	private static final LoadingCache<String, GameProfile> skinCache = (LoadingCache<String, GameProfile>) Reflections.getValue(Reflections.getField(tileentityskullClass, "skinCache"), tileentityskullClass);
@@ -65,7 +66,7 @@ public class GameProfileFetcher implements Supplier<GameProfile> {
 					Bukkit.getLogger().log(Level.WARNING, "Unable to get GameProfile of " + owner.getName() + ". Connection timed out...");
 				}
 			// get GameProfile from owner
-			} else localProfile = Reflections.getGameProfile(owner.getPlayer());
+			} else localProfile = BukkitReflections.getGameProfile(owner.getPlayer());
 		}
 		// return profile
 		return localProfile;

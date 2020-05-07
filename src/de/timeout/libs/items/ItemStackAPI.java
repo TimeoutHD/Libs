@@ -19,7 +19,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 
-import de.timeout.libs.Reflections;
+import de.timeout.libs.BukkitReflections;
 import net.md_5.bungee.api.ChatColor;
 
 /**
@@ -31,10 +31,10 @@ import net.md_5.bungee.api.ChatColor;
  */
 public final class ItemStackAPI {
 	
-	private static final Class<?> itemClass = Reflections.getNMSClass("Item");
-	private static final Class<?> itemstackClass = Reflections.getNMSClass("ItemStack");
-	private static final Class<?> craftitemstackClass = Reflections.getCraftBukkitClass("inventory.CraftItemStack");
-	private static final Class<?> nbttagcompoundClass = Reflections.getNMSClass("NBTTagCompound");
+	private static final Class<?> itemClass = BukkitReflections.getNMSClass("Item");
+	private static final Class<?> itemstackClass = BukkitReflections.getNMSClass("ItemStack");
+	private static final Class<?> craftitemstackClass = BukkitReflections.getCraftBukkitClass("inventory.CraftItemStack");
+	private static final Class<?> nbttagcompoundClass = BukkitReflections.getNMSClass("NBTTagCompound");
 	
 	private static final String AS_NMS_COPY = "asNMSCopy";
 	private static final String HAS_TAG = "hasTag";

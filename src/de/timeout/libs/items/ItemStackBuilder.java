@@ -17,15 +17,15 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import de.timeout.libs.Reflections;
+import de.timeout.libs.BukkitReflections;
 import de.timeout.libs.gui.GUI.Button;
 import de.timeout.libs.gui.GUI.ButtonClickEvent;
 
 public class ItemStackBuilder {
 	
-	private static final Class<?> itemstackClass = Reflections.getNMSClass("ItemStack");
-	private static final Class<?> nbttagcompoundClass = Reflections.getNMSClass("NBTTagCompound");
-	private static final Class<?> craftitemstackClass = Reflections.getCraftBukkitClass("inventory.CraftItemStack");
+	private static final Class<?> itemstackClass = BukkitReflections.getNMSClass("ItemStack");
+	private static final Class<?> nbttagcompoundClass = BukkitReflections.getNMSClass("NBTTagCompound");
+	private static final Class<?> craftitemstackClass = BukkitReflections.getCraftBukkitClass("inventory.CraftItemStack");
 	
 	private static final String AS_BUKKIT_COPY = "asBukkitCopy";
 	private static final String AS_NMS_COPY = "asNMSCopy";
@@ -188,7 +188,7 @@ public class ItemStackBuilder {
 			Object nmsCopy = craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, currentBuilding);
 			// get tagcompound
 			Object compound = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nmsCopy) ? 
-				itemstackClass.getMethod(GET_TAG).invoke(nmsCopy) : nbttagcompoundClass.newInstance();
+				itemstackClass.getMethod(GET_TAG).invoke(nmsCopy) : nbttagcompoundClass.getConstructor().newInstance();
 			// write int in compound
 			nbttagcompoundClass.getMethod("setInt", String.class, int.class).invoke(compound, key, value);
 			// set TagCompound in Item
@@ -214,7 +214,7 @@ public class ItemStackBuilder {
 			Object nmsCopy = craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, currentBuilding);
 			// get tagcompound
 			Object compound = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nmsCopy) ? 
-				itemstackClass.getMethod(GET_TAG).invoke(nmsCopy) : nbttagcompoundClass.newInstance();
+				itemstackClass.getMethod(GET_TAG).invoke(nmsCopy) : nbttagcompoundClass.getConstructor().newInstance();
 			// write int in compound
 			nbttagcompoundClass.getMethod("setBoolean", String.class, boolean.class).invoke(compound, key, value);
 			// set TagCompound in Item
@@ -240,7 +240,7 @@ public class ItemStackBuilder {
 			Object nmsCopy = craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, currentBuilding);
 			// get tagcompound
 			Object compound = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nmsCopy) ? 
-				itemstackClass.getMethod(GET_TAG).invoke(nmsCopy) : nbttagcompoundClass.newInstance();
+				itemstackClass.getMethod(GET_TAG).invoke(nmsCopy) : nbttagcompoundClass.getConstructor().newInstance();
 			// write int in compound
 			nbttagcompoundClass.getMethod("setString", String.class, boolean.class).invoke(compound, key, value);
 			// set TagCompound in Item

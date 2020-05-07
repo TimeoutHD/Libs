@@ -1,25 +1,15 @@
 package de.timeout.libs;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.libs.org.apache.commons.lang3.ArrayUtils;
-import org.bukkit.entity.Player;
+import org.apache.commons.lang.ArrayUtils;
 
-import com.mojang.authlib.GameProfile;
-
-public final class Reflections {
-		
-	private static final Field modifiers = getField(Field.class, "modifiers");
-	
-	private static final Class<?> packetClass = getNMSClass("Packet");
-	
-	private Reflections() {}
+public class Reflections {
+			
+	protected Reflections() {}
 	
 	public static Field getField(Class<?> clazz, String... names) {
 		// if names is not empty
@@ -29,15 +19,13 @@ public final class Reflections {
 				Field field = clazz.getDeclaredField(names[0]);
 				field.setAccessible(true);
 				
-				// change modifier fields
-				if(Modifier.isFinal(field.getModifiers())) modifiers.set(field, field.getModifiers() & ~Modifier.FINAL);
 				// return field
 				return field;
 			} catch (NoSuchFieldException e) {
 				// Field not found recursive execute without first element
-				return getField(clazz, ArrayUtils.subarray(names, 1, names.length));
-			} catch(IllegalArgumentException | SecurityException | IllegalAccessException e) {
-				Bukkit.getLogger().log(Level.SEVERE, "Cannot get checked fields " + Arrays.toString(names) + " in Class " + clazz.getName(), e);
+				return getField(clazz, (String[]) ArrayUtils.subarray(names, 1, names.length));
+			} catch(IllegalArgumentException | SecurityException e) {
+				Logger.getGlobal().log(Level.SEVERE, String.format("Cannot get checked fields %s in Class %s", Arrays.toString(names), clazz.getSimpleName()), e);
 			}
 			return null;
 		} else return null;
@@ -54,10 +42,9 @@ public final class Reflections {
 				Field field = clazz.getDeclaredField(name);
 			    field.setAccessible(true);
 			      
-			    if (Modifier.isFinal(field.getModifiers()))modifiers.set(field, field.getModifiers() & ~Modifier.FINAL);
 			    return field;
-			} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-				Bukkit.getLogger().log(Level.SEVERE, "Cannot get Field " + name + " in Class " + clazz.getName(), e);
+			} catch (NoSuchFieldException | SecurityException e) {
+				Logger.getGlobal().log(Level.SEVERE, String.format("Cannot get Field %s in Class %s", name, clazz.getSimpleName()), e);
 			}
 		return null;
 	}
@@ -82,8 +69,8 @@ public final class Reflections {
 		try {
 			field.setAccessible(true);
 			return field.get(obj);
-		} catch (IllegalArgumentException | IllegalAccessException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Could not get Value from Field " + field.getName() + " in " + obj, e);
+		} catch (IllegalAccessException e) {
+			Logger.getGlobal().log(Level.SEVERE, String.format("Could not get value from field %s in %s", field.getName(), obj.getClass().getSimpleName()), e);
 		}
 		return null;
 	}
@@ -103,22 +90,6 @@ public final class Reflections {
 	}
 	
 	/**
-	 * This method return an NMS-Class, which has a certain name
-	 * @param nmsClass the name of the NMS-Class
-	 * @return the CLass itself. Null if the class cannot be found.
-	 */
-	public static Class<?> getNMSClass(String nmsClass) {
-		try {
-			String version = Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".";
-			String name = "net.minecraft.server." + version + nmsClass;
-			return Class.forName(name);
-		} catch (ClassNotFoundException e) {
-			Bukkit.getLogger().log(Level.WARNING, "Could not find NMS-Class " + nmsClass, e);
-		}
-		return null;
-	}
-	
-	/**
 	 * This method returns a class-object from its name
 	 * @param classpath the name of the class
 	 * @return the class itself
@@ -127,59 +98,9 @@ public final class Reflections {
 		try {
 			return Class.forName(classpath);
 		} catch (ClassNotFoundException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Class " + classpath + " not found", e);
+			Logger.getGlobal().log(Level.SEVERE, "Class " + classpath + " not found", e);
 		}
 		return null;
-	}
-	
-	/**
-	 * This method returns a CraftBukkit-Class 
-	 * @param clazz the Craftbukkit-Class
-	 * @return the CraftBukkit-Class. Null if the class cannot be found
-	 */
-	public static Class<?> getCraftBukkitClass(String clazz) {
-		try {
-			String version = Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".";
-			String name = "org.bukkit.craftbukkit." + version + clazz;
-			return Class.forName(name);
-		} catch (ClassNotFoundException e) {
-			Bukkit.getLogger().log(Level.WARNING, "Could not find CraftBukkit-Class " + clazz, e);
-		}
-		return null;
-	}
-	
-	/**
-	 * This method returns an EntityPlayer-Object of a player
-	 * @param player the player
-	 * @return the EntityPlayer as Object
-	 * @throws ReflectiveOperationException if there was an error
-	 */
-	public static Object getEntityPlayer(Player player) throws ReflectiveOperationException {
-		Method getHandle = player.getClass().getMethod("getHandle");
-		return getHandle.invoke(player);
-	}
-	
-	/**
-	 * This method returns the PlayerConnection as an Object
-	 * @param player the owner of the player connection
-	 * @return the PlayerConnection as Object
-	 * @throws ReflectiveOperationException if there was an error
-	 */
-	public static Object getPlayerConnection(Player player) throws ReflectiveOperationException {
-		Object nmsp = getEntityPlayer(player);
-		Field con = nmsp.getClass().getField("playerConnection");
-		return con.get(nmsp);
-	}
-	
-	/**
-	 * This method sends a Packet to a Player
-	 * @param player the Player
-	 * @param packet the packet
-	 * @throws ReflectiveOperationException if the object is not a packet
-	 */
-	public static void sendPacket(Player player, Object packet) throws ReflectiveOperationException {
-		Object playerConnection = getPlayerConnection(player);
-		playerConnection.getClass().getMethod("sendPacket", packetClass).invoke(playerConnection, packet);
 	}
 	
 	/**
@@ -194,25 +115,11 @@ public final class Reflections {
 			field.set(obj, value);
 			field.setAccessible(false);
 		} catch (IllegalArgumentException | IllegalAccessException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Could not set Value " + value.getClass().getName() + " in Field " + field.getName() + " in Class " + obj.getClass().getName(), e);
+			Logger.getGlobal().log(Level.SEVERE, "Could not set Value " + value.getClass().getName() + " in Field " + field.getName() + " in Class " + obj.getClass().getName(), e);
 		}
 	}
 	
-	/**
-	 * This Method returns the player's GameProfile
-	 * @param player the owner of the GameProfile
-	 * @return the Gameprofile
-	 */
-	public static GameProfile getGameProfile(Player player) {
-		 try {
-			Class<?> craftplayerClass = getCraftBukkitClass("entity.CraftPlayer");
-			return craftplayerClass != null ? (GameProfile) craftplayerClass.getMethod("getProfile").invoke(player) : null;
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-				| SecurityException e) {
-			Bukkit.getLogger().log(Level.INFO, "Could not get GameProfile from Player " + player.getName(), e);
-		}
-		 return new GameProfile(player.getUniqueId(), player.getName());
-	}
+
 	
 	/**
 	 * This Method returns a Field in a class with a specific fieldtype

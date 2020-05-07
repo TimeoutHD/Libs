@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.logging.Level;
 
 import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
 
 public class ConfigCreator {
 	
@@ -35,9 +36,12 @@ public class ConfigCreator {
 		// If file is empty
 		if(configuration.length() == 0L) {
 			// copy files into subfolder
-			try(InputStream in = this.getClass().getClassLoader().getResourceAsStream(Paths.get(assetsDirectory, configPath).toString());
+			try(InputStream in = this.getClass().getResourceAsStream(Paths.get(assetsDirectory, configPath).toString());
 					OutputStream out = new FileOutputStream(configuration)) {
-				ByteStreams.copy(in, out);
+				// check if both streams are accessable
+				if(in != null) {
+					ByteStreams.copy(in, out);
+				} else logger.log(Level.WARNING, String.format("&cUnable to load %s from InputStream. InputStreams could not be loaded", configuration.getName()));
 			}
 		}
 		logger.log(Level.INFO, String.format("&7Loaded File %s &asuccessfully", configuration.getName()));
@@ -53,7 +57,10 @@ public class ConfigCreator {
 	 */
 	private File loadFile(String filePath) throws IOException {
 		File configFile = Paths.get(dataFolder.getAbsolutePath(), filePath).toFile();
-		if(configFile.getParentFile().mkdirs() || configFile.createNewFile()) 
+		// create Folder if not exists
+		Files.createParentDirs(configFile);
+		
+		if(configFile.createNewFile()) 
 			logger.log(Level.INFO, String.format("&7Created new file %s in datafolder", configFile.getName()));
 		
 		return configFile;
