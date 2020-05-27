@@ -1,7 +1,9 @@
 /bin/
 /doc/
 /target/
-.settings/
+/.settings/
 .classpath
 .project
 org.eclipse.jdt.core.prefs
+/.settings/.gitignore
+/.settings/org.eclipse.core.resources.prefs
