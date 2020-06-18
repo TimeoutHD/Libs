@@ -7,7 +7,7 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang.ArrayUtils;
 
-public class Reflections {
+class Reflections {
 			
 	protected Reflections() {}
 	

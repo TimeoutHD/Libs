@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>de.timeout</groupId>
   <artifactId>Libs</artifactId>
-  <version>1.5.3_1152-TEST</version>
+  <version>1.6.0_1152-TEST</version>
   
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

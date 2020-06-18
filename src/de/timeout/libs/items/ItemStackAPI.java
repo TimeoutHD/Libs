@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -222,83 +225,108 @@ public final class ItemStackAPI {
 		return itemStack.getType().toString();
 	}
 	
-	public static boolean hasNBTValue(ItemStack item, String key) {
+	/**
+	 * Returns an NMS-Copy of the itemstack as object
+	 * @param item the item you want to copy
+	 * @return the nms itemstack as object type
+	 */
+	public static Object asNMSCopy(ItemStack item) {
 		try {
-			// create NMSCopy
-			Object nmsCopy = craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, item);
-			// boolean if item has tag
-			boolean hasTag = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nmsCopy);
-			// if item has tag compound
-			if(hasTag) {
-				// get Compound
-				Object compound = itemstackClass.getMethod(GET_TAG).invoke(nmsCopy);
-				// return if kex exist
-				return (boolean) nbttagcompoundClass.getMethod(HAS_KEY, String.class).invoke(compound, key);
-			}
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-				| SecurityException e) {
-			Bukkit.getLogger().log(Level.SEVERE, ERROR_FAILED_GET_NBT_TAG + key, e);
+			return craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, item);
+		} catch (IllegalAccessException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Unable to create NMS-Copy of an itemstack: ", e);
+		} catch (IllegalArgumentException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Invalid argument format: ", e);
+		} catch (InvocationTargetException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Invocated target: ", e);
+		} catch (NoSuchMethodException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Method does not exist: ", e);
+		} catch (SecurityException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Security error while accessing with reflections: ", e);
 		}
+		
+		return null;
+	}
+	
+	public static ItemStack asBukkitCopy(Object nmsItem) {
+		try {
+			return (ItemStack) craftitemstackClass.getMethod("asBukkitCopy", itemstackClass).invoke(craftitemstackClass, nmsItem);
+		} catch (IllegalAccessException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Unable to create Bukkit-Copy of an itemstack: ", e);
+		} catch (IllegalArgumentException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Invalid argument format: ", e);
+		} catch (InvocationTargetException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Invocated target: ", e);
+		} catch (NoSuchMethodException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Method does not exist: ", e);
+		} catch (SecurityException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Security error while accessing with reflections: ", e);
+		}
+		
+		return null;
+	}
+	
+	@Nullable
+	public static Object getNBTTagCompound(ItemStack item) {
+		// create NMS itemstack
+		Object nms = asNMSCopy(item);
+		
+		// return null if itemstack is null
+		try {
+			return (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nms) ? itemstackClass.getMethod(GET_TAG).invoke(nms) : null;
+		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Unable to check up NBT-TagCompound", e);
+		}
+		
+		return null;
+	}
+	
+	public static boolean hasNBTValue(ItemStack item, String key) {
+		// get Compound
+		Object compound = getNBTTagCompound(item);
+		
+		// only search if compound exists!
+		if(compound != null) {
+			try {		
+				// return if key exist
+				return (boolean) nbttagcompoundClass.getMethod(HAS_KEY, String.class).invoke(compound, key);
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+					| SecurityException e) {
+				Bukkit.getLogger().log(Level.SEVERE, ERROR_FAILED_GET_NBT_TAG + key, e);
+			}
+		}
+			
 		return false;
 	}
 	
 	public static int getNBTIntValue(ItemStack item, String key) {
-		try {
-			// create NMSCopy
-			Object nmsCopy = craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, item);
-			// boolean if item has tag
-			boolean hasTag = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nmsCopy);
-			// if item has tag compound
-			if(hasTag) {
-				// get Compound
-				Object compound = itemstackClass.getMethod(GET_TAG).invoke(nmsCopy);
-				// return int value
-				return (int) nbttagcompoundClass.getMethod("getInt", String.class).invoke(compound, key);
-			} else throw new IllegalArgumentException(ERROR_NO_NBT_TAG);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-				| SecurityException e) {
-			Bukkit.getLogger().log(Level.SEVERE, ERROR_FAILED_GET_NBT_TAG + key);
-		}
-		return 0;
+		return (int) getNBTValue(item, key, "getInt");
 	}
 	
 	public static String getNBTStringValue(ItemStack item, String key) {
-		try {
-			// create NMSCopy
-			Object nmsCopy = craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, item);
-			// boolean if item has tag
-			boolean hasTag = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nmsCopy);
-			// if item has tag compound
-			if(hasTag) {
-				// get Compound
-				Object compound = itemstackClass.getMethod(GET_TAG).invoke(nmsCopy);
-				// return int value
-				return (String) nbttagcompoundClass.getMethod("getString", String.class).invoke(compound, key);
-			} else throw new IllegalArgumentException(ERROR_NO_NBT_TAG);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-				| SecurityException e) {
-			Bukkit.getLogger().log(Level.SEVERE, ERROR_FAILED_GET_NBT_TAG + key);
-		}
-		return null;
+		return (String) getNBTValue(item, key, "getString");
 	}
 	
 	public static boolean getNBTBooleanValue(ItemStack item, String key) {
+		return (boolean) getNBTValue(item, key, "getBoolean");
+	}
+	
+	protected static Object getNBTValue(ItemStack item, String key, String methodName) {
+		// create NMSCopy
+		Object nms = asNMSCopy(item);
+		
 		try {
-			// create NMSCopy
-			Object nmsCopy = craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, item);
-			// boolean if item has tag
-			boolean hasTag = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nmsCopy);
-			// if item has tag compound
-			if(hasTag) {
-				// get Compound
-				Object compound = itemstackClass.getMethod(GET_TAG).invoke(nmsCopy);
-				// return int value
-				return (boolean) nbttagcompoundClass.getMethod("getBoolean", String.class).invoke(compound, key);
-			} else throw new IllegalArgumentException(ERROR_NO_NBT_TAG);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-				| SecurityException e) {
+			// validate
+			Validate.isTrue((boolean) itemstackClass.getMethod(HAS_TAG).invoke(nms), ERROR_NO_NBT_TAG);
+			// get compound
+			Object compound = itemstackClass.getMethod(GET_TAG).invoke(nms);
+			
+			// return value
+			return nbttagcompoundClass.getMethod(methodName, String.class).invoke(compound, key);
+		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 			Bukkit.getLogger().log(Level.SEVERE, ERROR_FAILED_GET_NBT_TAG + key);
 		}
-		return false;
+		
+		return null;
 	}
 }

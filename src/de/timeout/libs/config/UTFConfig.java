@@ -26,7 +26,7 @@ import org.yaml.snakeyaml.representer.Representer;
 
 import com.google.common.io.Files;
 
-import de.timeout.libs.Reflections;
+import de.timeout.libs.BukkitReflections;
 
 /**
  * This class represents a Yaml Document with UTF-8 Coding
@@ -38,9 +38,9 @@ public class UTFConfig extends YamlConfiguration {
 	/**
 	 * These are option fields of the Yaml-Configuration. It is important to have access.
 	 */
-	private static final Field optionField = Reflections.getField(YamlConfiguration.class, "yamlOptions");
-	private static final Field representerField = Reflections.getField(YamlConfiguration.class, "yamlRepresenter");
-	private static final Field yamlField = Reflections.getField(YamlConfiguration.class, "yaml");
+	private static final Field optionField = BukkitReflections.getField(YamlConfiguration.class, "yamlOptions");
+	private static final Field representerField = BukkitReflections.getField(YamlConfiguration.class, "yamlRepresenter");
+	private static final Field yamlField = BukkitReflections.getField(YamlConfiguration.class, "yaml");
 		
 	private final List<String> original = new ArrayList<>();
 			
@@ -104,9 +104,9 @@ public class UTFConfig extends YamlConfiguration {
 	@Override
 	public String saveToString() {
 		// Load attributes with Reflection-Utils
-		DumperOptions yamlOptions = (DumperOptions) Reflections.getValue(optionField, this);
-		Representer yamlRepresenter = (Representer) Reflections.getValue(representerField, this);
-		Yaml yaml = (Yaml) Reflections.getValue(yamlField, this);
+		DumperOptions yamlOptions = (DumperOptions) BukkitReflections.getValue(optionField, this);
+		Representer yamlRepresenter = (Representer) BukkitReflections.getValue(representerField, this);
+		Yaml yaml = (Yaml) BukkitReflections.getValue(yamlField, this);
 		
 		// if all values are loaded
 		if(yamlOptions != null && yamlRepresenter != null && yaml != null) {

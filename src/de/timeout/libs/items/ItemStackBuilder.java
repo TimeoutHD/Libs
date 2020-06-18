@@ -25,10 +25,7 @@ public class ItemStackBuilder {
 	
 	private static final Class<?> itemstackClass = BukkitReflections.getNMSClass("ItemStack");
 	private static final Class<?> nbttagcompoundClass = BukkitReflections.getNMSClass("NBTTagCompound");
-	private static final Class<?> craftitemstackClass = BukkitReflections.getCraftBukkitClass("inventory.CraftItemStack");
 	
-	private static final String AS_BUKKIT_COPY = "asBukkitCopy";
-	private static final String AS_NMS_COPY = "asNMSCopy";
 	private static final String HAS_TAG = "hasTag";
 	private static final String GET_TAG = "getTag";
 	private static final String SET_TAG = "setTag";
@@ -184,18 +181,8 @@ public class ItemStackBuilder {
 	 */
 	public ItemStackBuilder writeNBTInt(String key, int value) {
 		try {
-			// create nms-copy
-			Object nmsCopy = craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, currentBuilding);
-			// get tagcompound
-			Object compound = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nmsCopy) ? 
-				itemstackClass.getMethod(GET_TAG).invoke(nmsCopy) : nbttagcompoundClass.getConstructor().newInstance();
-			// write int in compound
-			nbttagcompoundClass.getMethod("setInt", String.class, int.class).invoke(compound, key, value);
-			// set TagCompound in Item
-			itemstackClass.getMethod(SET_TAG, nbttagcompoundClass).invoke(nmsCopy, compound);
-			// safe new itemstack
-			currentBuilding = (ItemStack) craftitemstackClass.getMethod(AS_BUKKIT_COPY, itemstackClass).invoke(craftitemstackClass, nmsCopy);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException | InstantiationException e) {
+			writeNBT(key, value, "setInt", int.class);
+		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | InstantiationException e) {
 			Bukkit.getLogger().log(Level.SEVERE, NBT_ERROR + key, e);
 		}
 		// return this to continue
@@ -210,18 +197,8 @@ public class ItemStackBuilder {
 	 */
 	public ItemStackBuilder writeNBTBoolean(String key, boolean value) {
 		try {
-			// create nms-copy
-			Object nmsCopy = craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, currentBuilding);
-			// get tagcompound
-			Object compound = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nmsCopy) ? 
-				itemstackClass.getMethod(GET_TAG).invoke(nmsCopy) : nbttagcompoundClass.getConstructor().newInstance();
-			// write int in compound
-			nbttagcompoundClass.getMethod("setBoolean", String.class, boolean.class).invoke(compound, key, value);
-			// set TagCompound in Item
-			itemstackClass.getMethod(SET_TAG, nbttagcompoundClass).invoke(nmsCopy, compound);
-			// safe new itemstack
-			currentBuilding = (ItemStack) craftitemstackClass.getMethod(AS_BUKKIT_COPY, itemstackClass).invoke(craftitemstackClass, nmsCopy);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException | InstantiationException e) {
+			writeNBT(key, value, "setBoolean", boolean.class);
+		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | InstantiationException e) {
 			Bukkit.getLogger().log(Level.SEVERE, NBT_ERROR + key, e);
 		}
 		// return this to continue
@@ -234,23 +211,33 @@ public class ItemStackBuilder {
 	 * @param value the value you want to write in this key
 	 * @return the builder to continue
 	 */
-	public ItemStackBuilder writeNBTString(String key, String value) {
+	public ItemStackBuilder writeNBTString(String key, String value) {	 
 		try {
-			// create nms-copy
-			Object nmsCopy = craftitemstackClass.getMethod(AS_NMS_COPY, ItemStack.class).invoke(craftitemstackClass, currentBuilding);
-			// get tagcompound
-			Object compound = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nmsCopy) ? 
-				itemstackClass.getMethod(GET_TAG).invoke(nmsCopy) : nbttagcompoundClass.getConstructor().newInstance();
-			// write int in compound
-			nbttagcompoundClass.getMethod("setString", String.class, boolean.class).invoke(compound, key, value);
-			// set TagCompound in Item
-			itemstackClass.getMethod(SET_TAG, nbttagcompoundClass).invoke(nmsCopy, compound);
-			// safe new itemstack
-			currentBuilding = (ItemStack) craftitemstackClass.getMethod(AS_BUKKIT_COPY, itemstackClass).invoke(craftitemstackClass, nmsCopy);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException | InstantiationException e) {
+			writeNBT(key, value, "setString", String.class);
+		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | InstantiationException e) {
 			Bukkit.getLogger().log(Level.SEVERE, NBT_ERROR + key, e);
 		}
 		// return this to continue
 		return this;
+	}
+	
+	protected <T> void writeNBT(String key, T value, String methodName, Class<T> clazz) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SecurityException, InstantiationException {
+		// create nms-copy
+		Object nms = ItemStackAPI.asNMSCopy(currentBuilding);
+		if(nms != null) {
+			// get tagcompound
+			Object compound = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nms) ? 
+				itemstackClass.getMethod(GET_TAG).invoke(nms) : nbttagcompoundClass.getConstructor().newInstance();
+			
+			if(compound != null) {
+				// write data in compound
+				nbttagcompoundClass.getMethod(methodName, String.class, clazz).invoke(compound, key, value);
+				// set tagcompound in item
+				itemstackClass.getMethod(SET_TAG, nbttagcompoundClass).invoke(nms, compound);
+					
+				// save new itemstack
+				currentBuilding = ItemStackAPI.asBukkitCopy(nms);
+			}
+		}
 	}
 }

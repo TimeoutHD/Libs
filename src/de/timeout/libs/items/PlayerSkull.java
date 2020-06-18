@@ -23,7 +23,6 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 
 import de.timeout.libs.BukkitReflections;
-import de.timeout.libs.Reflections;
 import de.timeout.libs.profiles.GameProfileFetcher;
 import net.md_5.bungee.api.ChatColor;
 
@@ -37,8 +36,8 @@ public class PlayerSkull extends ItemStack {
 	private static final Class<?> craftmetaskullClass = BukkitReflections.getCraftBukkitClass("inventory.CraftMetaSkull");
 	private static final Class<?> craftskullClass = BukkitReflections.getCraftBukkitClass("block.CraftSkull");
 	
-	private static final Field metaProfileField = Reflections.getField(craftmetaskullClass, "profile");
-	private static final Field skullProfileField = Reflections.getField(craftskullClass, "profile");
+	private static final Field metaProfileField = BukkitReflections.getField(craftmetaskullClass, "profile");
+	private static final Field skullProfileField = BukkitReflections.getField(craftskullClass, "profile");
 	
 	private static final Base64 base64 = new Base64();
 	
@@ -67,7 +66,7 @@ public class PlayerSkull extends ItemStack {
 		profile = request.get(5, TimeUnit.SECONDS);
 		// Override profile field
 		ItemMeta meta = getItemMeta();
-		Reflections.setField(metaProfileField, meta, profile);
+		BukkitReflections.setField(metaProfileField, meta, profile);
 		setItemMeta(meta);
 	}
 	
@@ -96,7 +95,7 @@ public class PlayerSkull extends ItemStack {
         ItemStack skull = ItemStackAPI.createItemStack(Material.PLAYER_HEAD);
         ItemMeta meta = skull.getItemMeta();
         // write Profile in ItemMeta
-		Reflections.setField(metaProfileField, meta, profile);
+		BukkitReflections.setField(metaProfileField, meta, profile);
 		// set meta in skull
 		skull.setItemMeta(meta);
 		// return skull
@@ -148,7 +147,7 @@ public class PlayerSkull extends ItemStack {
 		// cast to Skull
 		Skull skull = (Skull) block.getState();
 		// insert profile in Skull
-		Reflections.setField(skullProfileField, skull, profile);
+		BukkitReflections.setField(skullProfileField, skull, profile);
 		// update Block
 		skull.update();
 		// return block

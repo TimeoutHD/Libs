@@ -19,7 +19,6 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService;
 
 import de.timeout.libs.BukkitReflections;
-import de.timeout.libs.Reflections;
 
 /**
  * This class repesents a bridge to Mojangs SessionServers to fetch already existing GameProfiles
@@ -32,8 +31,8 @@ public class GameProfileFetcher implements Supplier<GameProfile> {
 	private static final Class<?> tileentityskullClass = BukkitReflections.getNMSClass("TileEntitySkull");
 	
 	@SuppressWarnings("unchecked")
-	private static final LoadingCache<String, GameProfile> skinCache = (LoadingCache<String, GameProfile>) Reflections.getValue(Reflections.getField(tileentityskullClass, "skinCache"), tileentityskullClass);
-	private static final Executor executor = (Executor) Reflections.getValue(Reflections.getField(tileentityskullClass, "executor"), tileentityskullClass);
+	private static final LoadingCache<String, GameProfile> skinCache = (LoadingCache<String, GameProfile>) BukkitReflections.getValue(BukkitReflections.getField(tileentityskullClass, "skinCache"), tileentityskullClass);
+	private static final Executor executor = (Executor) BukkitReflections.getValue(BukkitReflections.getField(tileentityskullClass, "executor"), tileentityskullClass);
 	
 	private OfflinePlayer owner;
 	
