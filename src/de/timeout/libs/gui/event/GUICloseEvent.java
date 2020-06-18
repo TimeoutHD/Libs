@@ -4,28 +4,23 @@ import javax.annotation.Nonnull;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 
 import de.timeout.libs.gui.GUI;
 
-/**
- * Event which will be triggered if a player interacts 
- * @author Timeout
- *
- */
-public class GUIInteractEvent extends InventoryClickEvent {
+public class GUICloseEvent extends InventoryCloseEvent {
 
 	private static final HandlerList handlers = new HandlerList();
 	
 	private GUI gui;
 	
-	public GUIInteractEvent(@Nonnull InventoryClickEvent event, @Nonnull GUI gui) {
-		super(event.getView(), event.getSlotType(), event.getSlot(), event.getClick(), event.getAction());
-		// Validate
+	public GUICloseEvent(@Nonnull InventoryCloseEvent parent, @Nonnull GUI gui) {
+		super(parent.getView());
+		
 		Validate.notNull(gui, "GUI cannot be null");
 		this.gui = gui;
 	}
-	
+
 	public static HandlerList getHandlerList() {
 		return handlers;
 	}
@@ -35,13 +30,8 @@ public class GUIInteractEvent extends InventoryClickEvent {
 		return getHandlerList();
 	}
 	
-	/**
-	 * Returns the clicked gui
-	 * @return the clicked gui
-	 */
 	@Nonnull
 	public GUI getGUI() {
 		return gui;
 	}
-
 }

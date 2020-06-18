@@ -18,8 +18,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import de.timeout.libs.BukkitReflections;
-import de.timeout.libs.gui.GUI.Button;
-import de.timeout.libs.gui.GUI.ButtonClickEvent;
+import de.timeout.libs.gui.Button;
+import de.timeout.libs.gui.event.ButtonClickEvent;
 
 public class ItemStackBuilder {
 	
@@ -221,6 +221,20 @@ public class ItemStackBuilder {
 		return this;
 	}
 	
+	/**
+	 * Internal method for accessing and modifying NBT-TagCompound.
+	 * 
+	 * @param <T> the datatype which will be accessed
+	 * @param key the name of the key where this data will be stored
+	 * @param value the data itself
+	 * @param methodName the name of the internal NMS-Method to insert the data with the right type at the right place
+	 * @param clazz the class instance of the type T
+	 * @throws IllegalAccessException if any method cannot be accessed by Reflections
+	 * @throws InvocationTargetException This should never happen
+	 * @throws NoSuchMethodException if the executed method does not exists
+	 * @throws SecurityException if there was an unexpected security error inside your jvm
+	 * @throws InstantiationException if no new nbt tab compound could instantiated
+	 */
 	protected <T> void writeNBT(String key, T value, String methodName, Class<T> clazz) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SecurityException, InstantiationException {
 		// create nms-copy
 		Object nms = ItemStackAPI.asNMSCopy(currentBuilding);

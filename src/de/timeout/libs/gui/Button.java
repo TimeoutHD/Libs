@@ -8,7 +8,7 @@ import javax.annotation.Nonnull;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
-import de.timeout.libs.gui.GUI.ButtonClickEvent;
+import de.timeout.libs.gui.event.ButtonClickEvent;
 
 /**
  * Represents a button with a certain function. 

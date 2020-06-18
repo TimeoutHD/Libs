@@ -27,6 +27,7 @@ public class ButtonClickEvent extends GUIInteractEvent {
 		super(event, gui);
 		
 		Validate.notNull(button, "Button cannot be null");
+		this.button = button;
 	}
 	
 	/**

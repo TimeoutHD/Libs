@@ -9,7 +9,7 @@ import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
-import de.timeout.libs.gui.GUI2;
+import de.timeout.libs.gui.GUI;
 
 /**
  * Event which will be triggered if a player opens a gui
@@ -20,13 +20,13 @@ public class GUIOpenEvent extends Event implements Cancellable {
 	
 	private static final HandlerList handlers = new HandlerList();
 	
-	private GUI2 gui;
+	private GUI gui;
 	private HumanEntity player;
 	private String name;
 	
 	private boolean cancel;
 
-	public GUIOpenEvent(@Nonnull HumanEntity player, @Nonnull GUI2 gui, @Nullable String name) {
+	public GUIOpenEvent(@Nonnull HumanEntity player, @Nonnull GUI gui, @Nullable String name) {
 		Validate.notNull(gui, "GUI cannot be null");
 		Validate.notNull(player, "Player cannot be null");
 		
@@ -54,7 +54,7 @@ public class GUIOpenEvent extends Event implements Cancellable {
 	 * @return the opened gui
 	 */
 	@Nonnull
-	public GUI2 getGUI() {
+	public GUI getGUI() {
 		return gui;
 	}
 	
