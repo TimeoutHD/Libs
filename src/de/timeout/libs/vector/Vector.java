@@ -391,7 +391,8 @@ public class Vector extends org.bukkit.util.Vector {
 
 	@Nonnull
 	public static Vector getRandom() {
-		return new Vector(random.nextDouble(), random.nextDouble(), random.nextDouble());
+		double[] coords = random.doubles(3).toArray();
+		return new Vector(coords[0], coords[1], coords[2]);
 	}
 	  
 	@Nonnull

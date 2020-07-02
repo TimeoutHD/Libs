@@ -1,13 +1,18 @@
 package de.timeout.libs;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.commons.lang.ArrayUtils;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-class Reflections {
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.Validate;
+
+public class Reflections {
 			
 	protected Reflections() {}
 	
@@ -81,12 +86,15 @@ class Reflections {
 	 * @param classname the name of the class you are searching for
 	 * @return the class you are searching for. Null if the class does not exist
 	 */
-	public static Class<?> getSubClass(Class<?> overclass, String classname) {
-		Class<?>[] underclasses = overclass.getClasses();
-		for(Class<?> underclass : underclasses) {
-			if(underclass.getName().equalsIgnoreCase(overclass.getName() + "$" + classname))return underclass;
-		}
-		return null;
+	@Nullable
+	public static Class<?> getSubClass(@Nonnull Class<?> overclass, @Nonnull String classname) {
+		Validate.notNull(overclass, "OverClass cannot be null");
+		Validate.notEmpty(classname, "Name of SubClass can neither be null nor empty!");
+		
+		return Arrays.stream(overclass.getClasses())
+			.filter(underclass -> underclass.getName().equalsIgnoreCase(overclass.getName() + "$" + classname))
+			.findAny()
+			.orElse(null);
 	}
 	
 	/**
@@ -146,5 +154,31 @@ class Reflections {
 	public static void setValue(Object object, String fieldName, Object value) {
 		Field field = getField(object, fieldName);
 		Reflections.setField(field, object, value);
+	}
+	
+	/**
+	 * Returns the method of a certain object due reflections
+	 * @param clazz the class which has the method. Cannot be null
+	 * @param name the name of the method. Can neither be null nor empty
+	 * @param params the parameters of the method
+	 * @return the method or null if the method could not be found
+	 */
+	@Nullable
+	public static Method getMethod(@Nonnull Class<?> clazz, @Nonnull String name, Class<?>... params) {
+		// Validate
+		Validate.notNull(clazz, "Class cannot be null");
+		Validate.notEmpty(name, "Method-Name can neither be null nor empty!");
+		
+		try {
+			return clazz.getMethod(name, params);
+		} catch (NoSuchMethodException e) {
+			Logger.getGlobal().log(Level.SEVERE, String.format("Unable to find Method with name %s(%s) in %s!", name, 
+					Arrays.toString(Arrays.stream(params).map(param -> param.getName()).toArray()), clazz), e);
+		} catch (SecurityException e) {
+			Logger.getGlobal().log(Level.SEVERE, String.format("Internal SecurityException while searching method %s(%s) in class %s", name, 
+					Arrays.toString(Arrays.stream(params).map(param -> param.getName()).toArray()), clazz), e);
+		}
+		
+		return null;
 	}
 }

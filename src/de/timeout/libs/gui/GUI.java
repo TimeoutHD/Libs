@@ -1,33 +1,51 @@
 package de.timeout.libs.gui;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 
+import de.timeout.libs.BukkitReflections;
+import de.timeout.libs.Players;
+import de.timeout.libs.Reflections;
 import de.timeout.libs.gui.event.ButtonClickEvent;
 import de.timeout.libs.gui.event.GUICloseEvent;
 import de.timeout.libs.gui.event.GUIOpenEvent;
-import de.timeout.libs.items.ItemStackAPI;
+import de.timeout.libs.items.ItemStackBuilder;
 import net.md_5.bungee.api.ChatColor;
 
 public class GUI {
-	
+		
 	private static final GUIHandler handler = new GUIHandler();
 
+	private static final Class<?> craftinventoryviewClass = BukkitReflections.getCraftBukkitClass("inventory.CraftInventoryView");
+	private static final Class<?> chatmessageClass = BukkitReflections.getNMSClass("ChatMessage");
+	private static final Class<?> containerClass = BukkitReflections.getNMSClass("Container");
+	private static final Class<?> containersClass = BukkitReflections.getNMSClass("Containers");
+	private static final Class<?> ichatbasecomponentClass = BukkitReflections.getNMSClass("IChatBaseComponent");
+	private static final Class<?> packetplayoutopenwindowClass = BukkitReflections.getNMSClass("PacketPlayOutOpenWindow");
+	
+	private static final Field titleField = Reflections.getField(containerClass, "title");
+	private static final Field windowidField = Reflections.getField(containerClass, "windowId");
+	
 	protected final List<InventoryView> viewers = new ArrayList<>();
 	protected final List<GUIInteractable<?>> interactors;
 	
@@ -83,7 +101,7 @@ public class GUI {
 				
 				// add item
 				this.design[slot] = item;
-			} else this.design[slot] = ItemStackAPI.createItemStack(background, 1, ChatColor.translateAlternateColorCodes('&', "&7"));
+			} else this.design[slot] = new ItemStackBuilder().setType(background).setDisplayName(ChatColor.translateAlternateColorCodes('&', "&7")).toItemStack();
 		} else throw new IndexOutOfBoundsException(String.format("Slot index out of range: %d", slot));
 	}
 	
@@ -201,14 +219,14 @@ public class GUI {
 	}
 	
 	/**
-	 * Returns the name of the gui in view of the player
+	 * Returns the title of the gui in view of the player
 	 * 
 	 * @param viewer the original viewer of the gui
-	 * @return the name you want to get. Returns null if the viewer does not have this gui open
+	 * @return the title you want to get. Returns null if the viewer does not have this gui open
 	 * @throws IllegalArgumentException if the viewer is null
 	 * 
 	 */
-	public String getName(@Nonnull HumanEntity viewer) {
+	public String getTitle(@Nonnull HumanEntity viewer) {
 		// Validate
 		Validate.notNull(viewer, "Viewer cannot be null");
 		
@@ -228,6 +246,95 @@ public class GUI {
 		for(int i = 0; i < design.length; i++) inv.setItem(i, getItem(i));
 		
 		return inv;
+	}
+	
+	/**
+	 * 
+	 * @param entity
+	 * @return
+	 */
+	@Nullable
+	public InventoryView getView(@Nonnull HumanEntity entity) {
+		// Validate
+		Validate.notNull(entity, "Viewer cannot be null");
+
+		// search if entity contains the user
+		return viewers
+				.stream()
+				.filter(view -> view.getPlayer().equals(entity))
+				.findAny()
+				.orElseGet(null);
+		
+	}
+	
+	public void setTitle(@Nonnull Player viewer, String title) {
+		// Validate
+		Validate.notNull(viewer, "Viewer cannot be null");
+		
+		// try to get inventoryview
+		InventoryView gui = getView(viewer);
+		
+		// only continues if viewer sees the inventory
+		if(gui != null) {
+			try {
+				// create IChatComponent for title
+				Object chatComponent = chatmessageClass.getConstructor(String.class).newInstance(title);
+			
+				// change name in NMS
+				changeNMSTitle(gui, chatComponent);
+				
+				// get ActiveContainer
+				Object activeContainer = Players.getActiveContainer(viewer);
+				// create update packet
+				Object packet = packetplayoutopenwindowClass
+						.getConstructor(int.class, containersClass, ichatbasecomponentClass)
+						.newInstance(Reflections.getValue(windowidField, activeContainer), getContainerType(), chatComponent);
+				
+				// send packet
+				Players.sendPacket(viewer, packet);
+				viewer.updateInventory();
+			} catch (InstantiationException e) {
+				Bukkit.getLogger().log(Level.SEVERE, "Unable to instantiate IChatBaseComponent", e);
+			} catch (IllegalAccessException e) {
+				Bukkit.getLogger().log(Level.WARNING, "Unable to receive access to constructor ChatMessage(String)", e);
+			} catch (InvocationTargetException e) {
+				Bukkit.getLogger().log(Level.WARNING, "Invalid target constructor ChatMessage(String)", e);
+			} catch (NoSuchMethodException e) {
+				Bukkit.getLogger().log(Level.WARNING, "Unable to get constructor ChatMessage(String)", e);
+			} catch (SecurityException e) {
+				Bukkit.getLogger().log(Level.WARNING, "SecurityException while updating title in InventoryView.", e);
+			} catch (ReflectiveOperationException e) {
+				Bukkit.getLogger().log(Level.WARNING, "Unable to send packet to player", e);
+			}
+		}
+	}
+	
+	/**
+	 * Method to change inventory title in NMS
+	 * @param view the view of the container
+	 * @param titleComponent the component you want to insert
+	 */
+	private void changeNMSTitle(InventoryView view, Object titleComponent) {
+		try {
+			// get nms-container
+			Object container = craftinventoryviewClass.getMethod("getHandle").invoke(view);
+			
+			// insert chatcomponent into container
+			Reflections.setField(titleField, container, titleComponent);
+		} catch (IllegalAccessException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Unable to access method CraftInventoryView#getHandle", e);
+		} catch (InvocationTargetException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Invalid target: CraftInventoryView#getHandle", e);
+		} catch (NoSuchMethodException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Method CraftInventoryView#getHandle does not exists", e);
+		} catch (SecurityException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Unhandled Security exception inside JVM. Cannot change title of gui", e);
+		}
+	}
+	
+	private Object getContainerType() {
+		// get Field of current size
+		return Reflections.getField(containersClass, String.format("GENERIC_9X%d", design.length / 9L));
 	}
 	
 	/**

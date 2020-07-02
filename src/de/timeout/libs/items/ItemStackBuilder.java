@@ -35,13 +35,19 @@ public class ItemStackBuilder {
 	private ItemStack currentBuilding;
 	
 	public ItemStackBuilder() {
-		this.currentBuilding = ItemStackAPI.createItemStack(Material.STONE);
+		this.currentBuilding = new ItemStack(Material.STONE);
 	}
 	
 	public ItemStackBuilder(ItemStack base) {
 		// validate
 		Validate.notNull(base, "ItemStack cannot be null");
 		this.currentBuilding = base.clone();
+	}
+	
+	public ItemStackBuilder(Material material) {
+		// validate
+		Validate.notNull(material, "Material cannot be null");
+		this.currentBuilding = new ItemStack(material);
 	}
 	
 	/**
@@ -86,7 +92,7 @@ public class ItemStackBuilder {
 	 */
 	public ItemStackBuilder addEnchantment(Enchantment enchantment, int level) {
 		// set enchantment
-		ItemStackAPI.addEnchantment(currentBuilding, enchantment, level);
+		this.currentBuilding.addEnchantment(enchantment, level);
 		// return this to continue
 		return this;
 	}
@@ -112,7 +118,9 @@ public class ItemStackBuilder {
 	 */
 	public ItemStackBuilder setLore(List<String> lore) {
 		// Set Lore for currentBuilding
-		ItemStackAPI.setLore(currentBuilding, lore);
+		ItemMeta meta = currentBuilding.getItemMeta();
+		meta.setLore(lore);
+		currentBuilding.setItemMeta(meta);
 		// return this to continue
 		return this;
 	}
@@ -237,7 +245,7 @@ public class ItemStackBuilder {
 	 */
 	protected <T> void writeNBT(String key, T value, String methodName, Class<T> clazz) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SecurityException, InstantiationException {
 		// create nms-copy
-		Object nms = ItemStackAPI.asNMSCopy(currentBuilding);
+		Object nms = ItemStacks.asNMSCopy(currentBuilding);
 		if(nms != null) {
 			// get tagcompound
 			Object compound = (boolean) itemstackClass.getMethod(HAS_TAG).invoke(nms) ? 
@@ -250,7 +258,7 @@ public class ItemStackBuilder {
 				itemstackClass.getMethod(SET_TAG, nbttagcompoundClass).invoke(nms, compound);
 					
 				// save new itemstack
-				currentBuilding = ItemStackAPI.asBukkitCopy(nms);
+				currentBuilding = ItemStacks.asBukkitCopy(nms);
 			}
 		}
 	}

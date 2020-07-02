@@ -1,33 +1,33 @@
 package de.timeout.libs;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.bukkit.entity.Player;
+import org.bukkit.Bukkit;
 
-import com.mojang.authlib.GameProfile;
-
-public final class BukkitReflections extends Reflections {
+public final class BukkitReflections {
 	
-	private static final Class<?> packetClass = getNMSClass("Packet");
-	
+	private static final String VERSION = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
+		
 	/**
 	 * This method return an NMS-Class, which has a certain name
 	 * @param nmsClass the name of the NMS-Class
 	 * @return the CLass itself. Null if the class cannot be found.
 	 */
 	public static Class<?> getNMSClass(String nmsClass) {
-		try {
-			String version = org.bukkit.Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".";
-			String name = "net.minecraft.server." + version + nmsClass;
-			return Class.forName(name);
-		} catch (ClassNotFoundException e) {
-			Logger.getGlobal().log(Level.WARNING, "Could not find NMS-Class " + nmsClass, e);
-		}
-		return null;
+		return loadClass("net.minecraft.server.%s.%s", nmsClass);
+	}
+	
+	/**
+	 * This method returns the Array type of an NMS-Class.
+	 * For example it will return PacketPlayOutNamedEntitySpawn[].class instead of PacketPlayOutNamedEntitySpawn.class
+	 * 
+	 * For single types, please use {@link BukkitReflections#getNMSClass(String)}
+	 * 
+	 * @param nmsClass the name of the NMS-Class
+	 * @return the Array Type of the NMS-Class. Null if the class cannot be found
+	 */
+	public static Class<?> getNMSArrayTypeClass(String nmsClass) {
+		return loadClass("[Lnet.minecraft.server.%s.%s;", nmsClass);
 	}
 
 	/**
@@ -36,64 +36,29 @@ public final class BukkitReflections extends Reflections {
 	 * @return the CraftBukkit-Class. Null if the class cannot be found
 	 */
 	public static Class<?> getCraftBukkitClass(String clazz) {
+		return loadClass("org.bukkit.craftbukkit.%s.%s", clazz);
+	}
+	
+	/**
+	 * This method returns the array type of a certain CraftBukkit-Class
+	 * For example: it will returns CraftPlayer[].class instead of CraftPlayer.class
+	 * 
+	 * For single types please use {@link BukkitReflections#getCraftBukkitClass(String)}
+	 * 
+	 * @param clazz the path of the class after the version package. Split them with an '.'
+	 * @return the array type of the CraftBukkit-Class. Null if the class cannot be found
+	 */
+	public static Class<?> getCraftBukkitArrayTypeClass(String clazz) {
+		return loadClass("[Lorg.bukkit.craftbukkit.%s.%s;", clazz);
+	}
+	
+	private static Class<?> loadClass(String packagename, String clazz) {
+		String name = String.format(packagename, VERSION, clazz);
 		try {
-			String version = org.bukkit.Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".";
-			String name = "org.bukkit.craftbukkit." + version + clazz;
 			return Class.forName(name);
 		} catch (ClassNotFoundException e) {
-			Logger.getGlobal().log(Level.WARNING, "Could not find CraftBukkit-Class " + clazz, e);
+			Logger.getGlobal().log(Level.WARNING, "Could not find Class " + name, e);
 		}
 		return null;
 	}
-	
-	/**
-	 * This Method returns the player's GameProfile
-	 * @param player the owner of the GameProfile
-	 * @return the Gameprofile
-	 */
-	public static GameProfile getGameProfile(Player player) {
-		 try {
-			Class<?> craftplayerClass = getCraftBukkitClass("entity.CraftPlayer");
-			return craftplayerClass != null ? (GameProfile) craftplayerClass.getMethod("getProfile").invoke(player) : null;
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-				| SecurityException e) {
-			Logger.getGlobal().log(Level.INFO, "Could not get GameProfile from Player " + player.getName(), e);
-		}
-		 return new GameProfile(player.getUniqueId(), player.getName());
-	}
-	
-	/**
-	 * This method returns an EntityPlayer-Object of a player
-	 * @param player the player
-	 * @return the EntityPlayer as Object
-	 * @throws ReflectiveOperationException if there was an error
-	 */
-	public static Object getEntityPlayer(Player player) throws ReflectiveOperationException {
-		Method getHandle = player.getClass().getMethod("getHandle");
-		return getHandle.invoke(player);
-	}
-	
-	/**
-	 * This method returns the PlayerConnection as an Object
-	 * @param player the owner of the player connection
-	 * @return the PlayerConnection as Object
-	 * @throws ReflectiveOperationException if there was an error
-	 */
-	public static Object getPlayerConnection(Player player) throws ReflectiveOperationException {
-		Object nmsp = getEntityPlayer(player);
-		Field con = nmsp.getClass().getField("playerConnection");
-		return con.get(nmsp);
-	}
-	
-	/**
-	 * This method sends a Packet to a Player
-	 * @param player the Player
-	 * @param packet the packet
-	 * @throws ReflectiveOperationException if the object is not a packet
-	 */
-	public static void sendPacket(Player player, Object packet) throws ReflectiveOperationException {
-		Object playerConnection = getPlayerConnection(player);
-		playerConnection.getClass().getMethod("sendPacket", packetClass).invoke(playerConnection, packet);
-	}
-	
 }

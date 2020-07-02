@@ -16,36 +16,49 @@ public class ConfigCreator {
 	private static final ColoredLogger logger = new ColoredLogger("&8[&aLibs&8] ");
 	
 	private File dataFolder;
-	private String assetsDirectory;
 	
-	public ConfigCreator(File datafolder, String assetsDirectory) {
-		this.assetsDirectory = assetsDirectory;
-		this.dataFolder = datafolder;
+	public ConfigCreator() throws IOException {	
+		// load datafolder with jar's location and pluginname in Yaml
+		this.dataFolder = new File(
+			new File(ConfigCreator.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile(), 
+			new UTFConfig(this.getClass().getResourceAsStream("plugin.yml")).getString("name")
+		);
+	}
+	
+	public UTFConfig loadUTFConfig(String internalConfigPath, String externalPath) throws IOException {
+		return new UTFConfig(loadRessource(internalConfigPath, externalPath));
+	}
+	
+	public JsonConfig loadJsonConfig(String configPath, String externalPath) throws IOException {
+		return new JsonConfig(loadRessource(configPath, externalPath));
 	}
 	
 	/**
-	 * This file creates a written configuration in your plugin folder. Subfolders must be splitted with "/" like folder/config.yml.
-	 * Don't forget dataendings. Also check, if the path of your internal configuration is similar to the path of the pluginfolder.
-	 * @param configPath the path of your configuration. Must be similar to their real location. 
-	 * @return the File itself
-	 * @throws IOException if the system cannot create the file due input-output errors
+	 * 
+	 * @param internalConfigPath
+	 * @param copyPath
+	 * @return
+	 * @throws IOException 
 	 */
-	public File loadRessource(String configPath) throws IOException {
-		// call loadFile()
-		File configuration = loadFile(configPath);
-		// If file is empty
-		if(configuration.length() == 0L) {
-			// copy files into subfolder
-			try(InputStream in = this.getClass().getResourceAsStream(Paths.get(assetsDirectory, configPath).toString());
-					OutputStream out = new FileOutputStream(configuration)) {
-				// check if both streams are accessable
+	public File loadRessource(String internalConfigPath, String copyPath) throws IOException {
+		// create file in datafolder
+		File dataFile = loadFile(copyPath);
+		String internalPath = Paths.get(internalConfigPath).toString();
+		
+		// copy from internal config if file is empty
+		if(dataFile.length() == 0L) {
+			try(InputStream in = this.getClass().getResourceAsStream(internalPath);
+					OutputStream out = new FileOutputStream(dataFile)) {
 				if(in != null) {
 					ByteStreams.copy(in, out);
-				} else logger.log(Level.WARNING, String.format("&cUnable to load %s from InputStream. InputStreams could not be loaded", configuration.getName()));
+					logger.log(Level.INFO, String.format("&7Loaded File %s &asuccessfully", dataFile.getName()));
+				} else logger.log(Level.WARNING, 
+						String.format("&cUnable to copy data from internal file %s inside jar into file %s",
+								internalPath, dataFile.getPath()));
 			}
 		}
-		logger.log(Level.INFO, String.format("&7Loaded File %s &asuccessfully", configuration.getName()));
-		return configuration;
+		
+		return dataFile;
 	}
 	
 	/**

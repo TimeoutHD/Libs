@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>de.timeout</groupId>
   <artifactId>Libs</artifactId>
-  <version>1.6.0_1152-TEST</version>
+  <version>2.0_1152-REBUILD</version>
   
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -76,18 +76,13 @@
      	<id>dmulloy2-repo</id>
      	<url>http://repo.dmulloy2.net/nexus/repository/public/</url>
      </repository>
-     
-     <repository>
-        <id>spigot-repo</id>
-        <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
-    </repository>
   </repositories>
   
   <dependencies> 	
 	<dependency>
   		<groupId>org.spigotmc</groupId>
   		<artifactId>spigot</artifactId>
-  		<version>1.15.2-R0.1-SNAPSHOT</version>
+  		<version>1.16.1-R0.1-SNAPSHOT</version>
   		<scope>provided</scope>
   	</dependency>
   	

@@ -23,6 +23,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 
 import de.timeout.libs.BukkitReflections;
+import de.timeout.libs.Reflections;
 import de.timeout.libs.profiles.GameProfileFetcher;
 import net.md_5.bungee.api.ChatColor;
 
@@ -36,17 +37,17 @@ public class PlayerSkull extends ItemStack {
 	private static final Class<?> craftmetaskullClass = BukkitReflections.getCraftBukkitClass("inventory.CraftMetaSkull");
 	private static final Class<?> craftskullClass = BukkitReflections.getCraftBukkitClass("block.CraftSkull");
 	
-	private static final Field metaProfileField = BukkitReflections.getField(craftmetaskullClass, "profile");
-	private static final Field skullProfileField = BukkitReflections.getField(craftskullClass, "profile");
+	private static final Field metaProfileField = Reflections.getField(craftmetaskullClass, "profile");
+	private static final Field skullProfileField = Reflections.getField(craftskullClass, "profile");
 	
 	private static final Base64 base64 = new Base64();
 	
-	public static final ItemStack SKELETON = ItemStackAPI.createItemStack(Material.SKELETON_SKULL);
-	public static final ItemStack WITHER_SKELETON = ItemStackAPI.createItemStack(Material.WITHER_SKELETON_SKULL);
-	public static final ItemStack ZOMBIE = ItemStackAPI.createItemStack(Material.ZOMBIE_HEAD);
-	public static final ItemStack CREEPER = ItemStackAPI.createItemStack(Material.CREEPER_HEAD);
-	public static final ItemStack ENDERDRAGON = ItemStackAPI.createItemStack(Material.DRAGON_HEAD);
-	public static final ItemStack STEVE = ItemStackAPI.createItemStack(Material.PLAYER_HEAD);
+	public static final ItemStack SKELETON = new ItemStack(Material.SKELETON_SKULL);
+	public static final ItemStack WITHER_SKELETON = new ItemStack(Material.WITHER_SKELETON_SKULL);
+	public static final ItemStack ZOMBIE = new ItemStack(Material.ZOMBIE_HEAD);
+	public static final ItemStack CREEPER = new ItemStack(Material.CREEPER_HEAD);
+	public static final ItemStack ENDERDRAGON = new ItemStack(Material.DRAGON_HEAD);
+	public static final ItemStack STEVE = new ItemStack(Material.PLAYER_HEAD);
 	
 	private GameProfile profile;
 	
@@ -59,14 +60,16 @@ public class PlayerSkull extends ItemStack {
 	 * @throws TimeoutException if the connection timed out and no GameProfile was avaiable
 	 */
 	public PlayerSkull(String displayname, int amount, UUID uuid) throws InterruptedException, ExecutionException, TimeoutException {
-		super(ItemStackAPI.createItemStack(Material.PLAYER_HEAD, amount > 0 ? amount : 1, ChatColor.translateAlternateColorCodes('&', displayname)));
+		super(new ItemStackBuilder(STEVE)
+				.setDisplayName(ChatColor.translateAlternateColorCodes('&', displayname))
+				.toItemStack());
 				
 		Future<GameProfile> request = overrideGameProfile(uuid);
 		// get Profile
 		profile = request.get(5, TimeUnit.SECONDS);
 		// Override profile field
 		ItemMeta meta = getItemMeta();
-		BukkitReflections.setField(metaProfileField, meta, profile);
+		Reflections.setField(metaProfileField, meta, profile);
 		setItemMeta(meta);
 	}
 	
@@ -92,10 +95,10 @@ public class PlayerSkull extends ItemStack {
         // put values in profile
         profile.getProperties().put("textures", new Property("textures", new String(encodedData)));
         // create ItemStack and get ItemMeta
-        ItemStack skull = ItemStackAPI.createItemStack(Material.PLAYER_HEAD);
+        ItemStack skull = new ItemStackBuilder(STEVE).toItemStack();
         ItemMeta meta = skull.getItemMeta();
         // write Profile in ItemMeta
-		BukkitReflections.setField(metaProfileField, meta, profile);
+		Reflections.setField(metaProfileField, meta, profile);
 		// set meta in skull
 		skull.setItemMeta(meta);
 		// return skull
@@ -147,7 +150,7 @@ public class PlayerSkull extends ItemStack {
 		// cast to Skull
 		Skull skull = (Skull) block.getState();
 		// insert profile in Skull
-		BukkitReflections.setField(skullProfileField, skull, profile);
+		Reflections.setField(skullProfileField, skull, profile);
 		// update Block
 		skull.update();
 		// return block
