@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Base64;
+import java.util.Map;
 import java.util.logging.Level;
 
 import javax.annotation.Nonnull;
@@ -17,6 +18,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.internal.bind.JsonTreeReader;
 
 import de.timeout.libs.BukkitReflections;
 import de.timeout.libs.Reflections;
@@ -47,6 +53,8 @@ public final class ItemStacks {
 	
 	private static final String ERROR_NO_NBT_TAG = "ItemStack has no NBT-Tag";
 	private static final String ERROR_FAILED_GET_NBT_TAG = "Cannot get NMS-Copy of item ";
+	
+	private static final Gson GSON = new Gson();
 	
 	private ItemStacks() {
 		// No need for Util-Class to create an Object
@@ -89,6 +97,26 @@ public final class ItemStacks {
 			Bukkit.getLogger().log(Level.SEVERE, "Could not create Object", e);
 		}
 		return null;
+	}
+	
+	/**
+	 * Encodes an ItemStack into a JSON-Object
+	 * @param item the itemstack you want to encode
+	 * @return the json object of the itemstack. Cannot be null
+	 */
+	@Nonnull
+	public static JsonObject encodeJson(ItemStack item) {
+		return new JsonParser().parse(GSON.toJson(item.serialize())).getAsJsonObject();
+	}
+	
+	/**
+	 * Decodes an JsonObject of an ItemStack into the ItemStack
+	 * @param data the json data of the ItemStack
+	 * @return the ItemStack
+	 */
+	@Nonnull
+	public static ItemStack decodeJson(JsonObject data) {
+		return ItemStack.deserialize(GSON.fromJson(new JsonTreeReader(data), Map.class));
 	}
 	
 	@Nonnull

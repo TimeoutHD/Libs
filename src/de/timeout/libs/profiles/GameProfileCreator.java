@@ -42,7 +42,7 @@ public class GameProfileCreator implements Supplier<GameProfile> {
 		// create empty profile
 		GameProfile profile = new GameProfile(UUID.randomUUID(), null);
 
-		// create UTL connection
+		// create URL connection
 		try(InputStream in = new URL(String.format(URL_FORMAT, url, "", model.getName(), 0)).openStream()) {
 			// get Response
 			JsonObject response = new JsonParser().parse(new InputStreamReader(in)).getAsJsonObject()

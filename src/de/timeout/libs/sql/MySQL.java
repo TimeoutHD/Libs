@@ -1,24 +1,25 @@
 package de.timeout.libs.sql;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang.Validate;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
+
 /**
  * This Class is a Hook into the MySQL-Database
- * @author timeout
+ * @author Timeout
  *
  */
 public class MySQL {
@@ -31,36 +32,73 @@ public class MySQL {
 	
 	private Connection connection;
 	
-	public MySQL(String host, int port, String database) {
+	/**
+	 * Creates a new hook for accessing MySQL
+	 * 
+	 * @param host the hostname of your MySQL-Server
+	 * @param port the port of your MySQL-Server
+	 * @param database the database you want to use
+	 */
+	public MySQL(@NotNull String host, int port, @NotNull String database) {
+		// Validate
+		Validate.notEmpty(host, "Hostname can neither be null nor empty");
+		Validate.isTrue(port > 0, "Port must be a positive number greater than zero");
+		Validate.notEmpty(database, "Database can neither be null nor empty");
+		
 		this.host = host;
 		this.database = database;
 		this.port = port;			
 	}
 	
 	/**
-	 * Connect to MySQL-Database, but needs an username and his password
+	 * Connect to MySQL-Database, but requires an username and his password
 	 * 
 	 * @param username the username of the database
 	 * @param password the password of the user
-	 * @return a bool, if the hook is successfully connected
-	 * @throws SQLException if there are unexpected errors
+	 * @return a boolean if the hook is successfully connected
+	 * @throws SQLException if there were unexpected errors during the connection
 	 */
-	public boolean connect(String username, String password) throws SQLException {
-		if(!isConnected()) {
-			// Bungeecord / Bukkit manage Driver-initialization -> not necessary. Only necessary when you use this outside the Bukkit / Bungecord API
-			// DriverManager.registerDriver(new Driver());
-			connection = DriverManager.getConnection(String.format("jdbc:mysql://%s:%d/%s"
-					+ "?autoReconnect=true"
-					+ "&useOldAliasMetadataBehavior=true"
-					+ "&useUnicode=true"
-					+ "&useJDBCCompilantTimezoneShift=true"
-					+ "&useLegacyDatetimeCode=false"
-					+ "&serverTimezone=UTC"
-					+ "&useSSL=false", host, port, database),
-			username, password);
-			return connection != null;
-		}
-		return false;
+	public boolean connect(@NotNull String username, @Nullable String password) throws SQLException {
+		// create properties 
+		MysqlDataSource properties = new MysqlDataSource();
+		properties.setAutoReconnect(true);
+		properties.setUseOldAliasMetadataBehavior(true);
+		properties.setUseUnicode(true);
+		properties.setUseLegacyDatetimeCode(false);
+		properties.setServerTimezone("UTC");
+		properties.setUseSSL(true);
+		properties.setCreateDatabaseIfNotExist(true);
+		
+		// connect to server
+		return connect(username, password, properties);
+	}
+	
+	/**
+	 * Connect to MySQL-Database with custom settings. 
+	 * 
+	 * @param username the username you want to use. Cannot be null
+	 * @param password the password of the user
+	 * @param properties your customized password
+	 * @return a boolean if the hook is successfully connected
+	 * @throws SQLException
+	 */
+	public boolean connect(
+			@NotNull String username, 
+			@Nullable String password,
+			@NotNull MysqlDataSource properties) throws SQLException {
+		// Validate
+		Validate.notEmpty(username, "Username can neither be null nor empty");
+		Validate.notNull(properties, "Properties cannot be null");
+		
+		// fill with data
+		properties.setUrl(host);
+		properties.setPort(port);
+		properties.setDatabaseName(database);
+		
+		// connect to server
+		connection = properties.getConnection(username, password);
+		
+		return connection != null;
 	}
 	
 	/**
@@ -87,114 +125,91 @@ public class MySQL {
 	}
 	
 	/**
-	 * return the actual connection
-	 * @return the actual connection as Connection-Interface
+	 * return the current connection
+	 * 
+	 * @return the current connection 
+	 * 	Is null before {@link MySQL#connect(String, String, MysqlDataSource)} or {@link MySQL#connect(String, String)} was triggered
 	 */
+	@Nullable
 	public Connection getConnection() {
 		return connection;
 	}
 	
 	/**
-	 * Puts parametrt (argumeants) into the statement and returns the statement.
+	 * Creates a new PreparedStatement with parameters / arguments. 
 	 * 
-	 * @param statement the statement
-	 * @param args the arguments
-	 * @return the converted statement
-	 * @throws SQLException If there was an error.
+	 * @param statement the statement. Cannot be null
+	 * @param args the arguments you want to use
+	 * @return the prepared statement. Cannot be null
+	 * @throws SQLException If there was an error while converting the string and the arguments into a prepared statement
+	 * @throws IllegalArgumentException if parameter statement is null
 	 */
-	private PreparedStatement convertStatement(String statement, Object[] args) throws SQLException {
-		if(statement != null) {
-			//Do not close this Statement here!!
-			PreparedStatement ps = connection.prepareStatement(statement);
-			for(int i = 0; i < args.length; i++) ps.setString(i +1, args[i].toString());
-			return ps;
-		} else throw new IllegalArgumentException("Statement cannot be null");
+	@NotNull
+	public PreparedStatement createStatement(@NotNull String statement, Object[] args) throws SQLException {
+		// Validate
+		Validate.notEmpty(statement, "Statement can neither be null nor empty");
+
+		// Create Statement
+		PreparedStatement ps = connection.prepareStatement(statement);
+		for(int i = 0; i < args.length; i++) ps.setString(i + 1, args[i].toString());
+		return ps;
 	}
 	
 	/**
-	 * Executes a Void-Statement. A void statement is a statement, that returns a bool instead of a table like INSERT, UPDATE or DELETE.
+	 * Executes an asynchronous query statement
 	 * 
-	 * @param statement The statement.
-	 * @param variables the arguments in the right order. Variables in statements are displayed with '?'
-	 * @return a bool which contains the result
-	 * @throws TimeoutException if the connection to your database timed out
-	 * @throws SQLException if there were an error in the MySQL-Statement
+	 * @param statement the statement you want to execute. Cannot be null
+	 * @param query a function which will be executed after the bridge received a ResultSet answer of the statement
+	 * @throws IllegalArgumentException if the statement is null
 	 */
-	public boolean executeVoidStatement(String statement, Object... variables) throws TimeoutException, SQLException {
-		try {
-			return executeFutureVoidStatement(statement, variables).get(5, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			Logger.getGlobal().log(Level.SEVERE, "Cannot execute Void-Statement. Thread interrupted", e);
-		} catch (ExecutionException e) {
-			Logger.getGlobal().log(Level.WARNING, "Unhandled exception while executing void statement", e);
-		}
-		return false;
+	public void executeAsyncQuery(@NotNull PreparedStatement statement, @Nullable Consumer<ResultSet> query) {
+		// Validate
+		Validate.notNull(statement, "Statement cannot be null");
+		
+		// start async runnable
+		CompletableFuture.runAsync(() -> {
+			// execute statement
+			try(ResultSet rs = statement.executeQuery()) {
+				// apply function
+				if(query != null) query.accept(rs);
+			} catch(SQLException e) {
+				Logger.getGlobal().log(Level.WARNING, "Unable to execute SQL-Statement", e);
+			}
+		}, executor);
 	}
 	
 	/**
-	 * Execute a statement and returns a table. This method is used with the "SELECT"-Statement.
-	 * The return-type is a table which has columns and tuples. 
-	 *  
-	 * @param statement The statement
-	 * @param variables the arguments in the right order. Variables in statements are displayred with '?'
-	 * @return the table as table object or null if there were an error
-	 * @throws SQLException If there is an error in your MySQL-Statement
-	 * @throws TimeoutException if the connection to the database timed out
-	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
-	 */
-	public ResultSet executeStatement(String statement, Object... variables) throws TimeoutException, SQLException {
-		try {
-			return executeFutureStatement(statement, variables).get(5, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			Logger.getGlobal().log(Level.SEVERE, "Fatal error while executing statement. Thread interrupted", e);
-		} catch (ExecutionException e) {
-			Logger.getGlobal().log(Level.WARNING, "Unhandled exception while executing statement", e);
-		}
-		return null;
-	}
-	
-	/**
-	 * Execute a Void-Statement. A void statement is a statement, that returns a bool instead of a table like INSERT, UPDATE or DELETE.
+	 * Executes an asynchronous update / delete / insert statement 
 	 * 
-	 * @param statement The statement
-	 * @param variables the arguments in the right order. Variables in statements are displayed with '?'
-	 * @return a Future with a bool which contains the result
-	 * @throws SQLException If there were an error in the MySQL-Statement
-	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
+	 * @param statement the statement you want to execute. Cannot be null
+	 * @param result a function which will be executed after the bridge received a boolean answer of the statement
+	 * @throws IllegalArgumentException if the statement is null
 	 */
-	public Future<Boolean> executeFutureVoidStatement(String statement, Object... variables) throws SQLException {
-		if(isConnected()) {
-			return CompletableFuture.supplyAsync(() -> {
-					try(PreparedStatement prepStatement = convertStatement(statement, variables)) {
-						return prepStatement.execute();
-					} catch (SQLException e) {
-						throw new CompletionException(e);
-					}
-			}, executor);
-		} else throw new IllegalStateException("Connection is closed. Please connect to a MySQL-Database before using any statements");
+	public void executeAsync(@NotNull PreparedStatement statement, @Nullable Consumer<Boolean> result) {
+		// Validate
+		Validate.notNull(statement, "Statement cannot be null");
+		
+		// start async runnable
+		CompletableFuture.runAsync(() -> {
+			// execute statement
+			try {
+				// get result
+				boolean res = statement.execute();
+				
+				// apply function if function exists
+				if(result != null) result.accept(res);
+			} catch (SQLException e) {
+				Logger.getGlobal().log(Level.WARNING, "Unable to execute SQL-Statement", e);
+			}
+		}, executor);
 	}
 	
 	/**
-	 * Execute a statement and returns a table. This method is used with the "SELECT"-Statement.
-	 * The return-type is a table which has columns and tuples. 
-	 *  
-	 * @param statement The statement
-	 * @param variables the arguments in the right order. Variables in statements are displayred with '?'
-	 * @return the table as table object
-	 * @throws SQLException If there is an error in your MySQL-Statement
-	 * @throws IllegalStateException if the connection is closed of not availiable (show {@link MySQL#isConnected()} for more informations)
+	 * Executes an asynchronous update / delete / insert statement
+	 * @param statement the statement you want to execute. Cannot be null
+	 * @throws IllegalArgumentException if the statement is null
 	 */
-	public Future<ResultSet> executeFutureStatement(String statement, Object... variables) throws SQLException {
-		if(isConnected()) {
-			return CompletableFuture.supplyAsync(() -> {
-				try(PreparedStatement prepStatement = convertStatement(statement, variables)) {
-					return prepStatement.executeQuery();
-				} catch (SQLException e) {
-					throw new CompletionException(e);
-				}
-			}, executor);
-		} else throw new IllegalStateException("Connection is closed. Please connect to a MySQL-Database before using any statements");
+	public void executeAsync(@NotNull PreparedStatement statement) {
+		executeAsync(statement, null);
 	}
 }
