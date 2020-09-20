@@ -29,10 +29,10 @@ public final class ConfigCreator {
 	
 	/**
 	 * 
-	 * @param internalConfigPath
-	 * @param copyPath
-	 * @return
-	 * @throws IOException 
+	 * @param internalConfigPath the path of the config inside of the jar
+	 * @param out the file where all values should be written
+	 * @return the file itself
+	 * @throws IOException if the configuration could not be copied from jar to its destination
 	 */
 	public static File loadRessource(String internalConfigPath, File out) throws IOException {
 		// create file in datafolder
@@ -58,7 +58,7 @@ public final class ConfigCreator {
 	/**
 	 * This method creates an empty file in your plugin folder. Subfolders must be splitted with "/" like folder/file.txt.
 	 * Don't forget dataendings
-	 * @param filePath the path or name of the file
+	 * @param out the path or name of the file
 	 * @return the file itself
 	 * @throws IOException if the system cannot create the file due input output errors
 	 */

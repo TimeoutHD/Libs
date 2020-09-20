@@ -7,6 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 
 import javax.annotation.Nonnull;
@@ -26,6 +27,7 @@ import com.google.gson.internal.bind.JsonTreeReader;
 
 import de.timeout.libs.BukkitReflections;
 import de.timeout.libs.Reflections;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Utilities for ItemStacks
@@ -41,15 +43,15 @@ public final class ItemStacks {
 	private static final Class<?> nbttagcompoundClass = BukkitReflections.getNMSClass("NBTTagCompound");
 	private static final Class<?> localelanguageClass = BukkitReflections.getNMSClass("LocaleLanguage");
 	
-	private static final Method AS_NMS_COPY = Reflections.getMethod(craftitemstackClass, "asNMSCopy");
-	private static final Method HAS_TAG = Reflections.getMethod(itemstackClass, "hasTag");
-	private static final Method HAS_KEY = Reflections.getMethod(nbttagcompoundClass, "hasKey", String.class);
-	private static final Method GET_TAG = Reflections.getMethod(nbttagcompoundClass, "getTag", String.class);
-	private static final Method A = Reflections.getMethod(localelanguageClass, "a", String.class);
-	private static final Method GET_NAME = Reflections.getMethod(itemClass, "getName");
-	private static final Method GET_ITEM = Reflections.getMethod(itemstackClass, "getItem");
+	private static final @NotNull Method AS_NMS_COPY = Objects.requireNonNull(Reflections.getMethod(craftitemstackClass, "asNMSCopy"));
+	private static final @NotNull Method HAS_TAG = Objects.requireNonNull(Reflections.getMethod(itemstackClass, "hasTag"));
+	private static final @NotNull Method HAS_KEY = Objects.requireNonNull(Reflections.getMethod(nbttagcompoundClass, "hasKey", String.class));
+	private static final @NotNull Method GET_TAG = Objects.requireNonNull(Reflections.getMethod(nbttagcompoundClass, "getTag", String.class));
+	private static final @NotNull Method A = Objects.requireNonNull(Reflections.getMethod(localelanguageClass, "a", String.class));
+	private static final @NotNull Method GET_NAME = Objects.requireNonNull(Reflections.getMethod(itemClass, "getName"));
+	private static final @NotNull Method GET_ITEM = Objects.requireNonNull(Reflections.getMethod(itemstackClass, "getItem"));
 	
-	private static final Object LOCALE_LANGUAGE = Reflections.getValue(Reflections.getField(localelanguageClass, "d"), localelanguageClass);
+	private static final @NotNull Object LOCALE_LANGUAGE = Objects.requireNonNull(Reflections.getValue(Objects.requireNonNull(Reflections.getField(localelanguageClass, "d")), localelanguageClass));
 	
 	private static final String ERROR_NO_NBT_TAG = "ItemStack has no NBT-Tag";
 	private static final String ERROR_FAILED_GET_NBT_TAG = "Cannot get NMS-Copy of item ";
@@ -122,25 +124,23 @@ public final class ItemStacks {
 	@Nonnull
 	public static String getCustomizedName(ItemStack itemStack) {
 		// return displayname if item has one
-		if(!itemStack.hasItemMeta() || !itemStack.getItemMeta().hasDisplayName()) {
-			// get nmsItem
-			Object nmsItem = getNMSItem(itemStack);
-			
-			// only continue if the item could be found
-			if(nmsItem != null) {
-				try {
-					return (String) A.invoke(LOCALE_LANGUAGE, GET_NAME.invoke(nmsItem));
-				} catch (IllegalAccessException | InvocationTargetException e) {
-					Bukkit.getLogger().log(Level.WARNING, "Unable to get name of itemstack. Continue with normal name");
-				}
-			}
-			
-			// return ItemStack name if no name could be found
-			return WordUtils.capitalize(itemStack.getType().toString());
-		} else return itemStack.getItemMeta().getDisplayName();
-		
+		if(itemStack.hasItemMeta() && Objects.requireNonNull(itemStack.getItemMeta()).hasDisplayName())
+			return itemStack.getItemMeta().getDisplayName();
 
-		
+		// get nmsItem
+		Object nmsItem = getNMSItem(itemStack);
+			
+		// only continue if the item could be found
+		if(nmsItem != null) {
+			try {
+				return (String) A.invoke(LOCALE_LANGUAGE, GET_NAME.invoke(nmsItem));
+			} catch (IllegalAccessException | InvocationTargetException e) {
+				Bukkit.getLogger().log(Level.WARNING, "Unable to get name of itemstack. Continue with normal name");
+			}
+		}
+
+		// return ItemStack name if no name could be found
+		return WordUtils.capitalize(itemStack.getType().toString());
 	}
 	
 	/**
@@ -222,25 +222,47 @@ public final class ItemStacks {
 			try {		
 				// return if key exist
 				return (boolean) HAS_KEY.invoke(compound, key);
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
-				Bukkit.getLogger().log(Level.SEVERE, ERROR_FAILED_GET_NBT_TAG + key, e);
+			} catch (IllegalAccessException | InvocationTargetException e) {
+				Bukkit.getLogger().log(Level.SEVERE, e, () -> ERROR_FAILED_GET_NBT_TAG + key);
 			}
 		}
 			
 		return false;
 	}
-	
+
+	/**
+	 * Returns the value of an integer stored in that key.
+	 * If the value could not be found it will throw a NullPointerException
+	 * @param item the item which stores the data
+	 * @param key the key where the data is stored
+	 * @return the integer value
+	 * @throws NullPointerException if the value could not be found
+	 */
 	public static int getNBTIntValue(ItemStack item, String key) {
-		return (int) getNBTValue(item, key, "getInt");
+		return (int) Objects.requireNonNull(getNBTValue(item, key, "getInt"));
 	}
-	
-	@Nullable
+
+	/**
+	 * Returns the string value which is stored inside of the NBT-Key
+	 * @param item the item where the value is stored
+	 * @param key the NBT-Key where the data is stored
+	 * @return the String-Data itself. Cannot be null
+	 * @throws NullPointerException if the value could not be found or is null
+	 */
+	@NotNull
 	public static String getNBTStringValue(ItemStack item, String key) {
-		return (String) getNBTValue(item, key, "getString");
+		return (String) Objects.requireNonNull(getNBTValue(item, key, "getString"));
 	}
-	
+
+	/**
+	 * Returns the boolean value which is stored inside of the NBT-Key
+	 * @param item the item where the value is stored
+	 * @param key the NBT-Key where the data is stored
+	 * @return the boolean itself.
+	 * @throws NullPointerException if the value could not be found
+	 */
 	public static boolean getNBTBooleanValue(ItemStack item, String key) {
-		return (boolean) getNBTValue(item, key, "getBoolean");
+		return (boolean) Objects.requireNonNull(getNBTValue(item, key, "getBoolean"));
 	}
 	
 	protected static Object getNBTValue(ItemStack item, String key, String methodName) {
@@ -256,7 +278,7 @@ public final class ItemStacks {
 			// return value
 			return nbttagcompoundClass.getMethod(methodName, String.class).invoke(compound, key);
 		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-			Bukkit.getLogger().log(Level.SEVERE, ERROR_FAILED_GET_NBT_TAG + key);
+			Bukkit.getLogger().log(Level.SEVERE, () -> ERROR_FAILED_GET_NBT_TAG + key);
 		}
 		
 		return null;

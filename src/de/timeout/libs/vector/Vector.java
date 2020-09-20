@@ -3,14 +3,12 @@ package de.timeout.libs.vector;
 import java.util.Map;
 import java.util.SplittableRandom;
 
-import javax.annotation.Nonnull;
-
+import org.apache.commons.lang.Validate;
 import org.bukkit.configuration.serialization.SerializableAs;
-
-import com.google.common.base.Preconditions;
 
 import net.jafama.DoubleWrapper;
 import net.jafama.FastMath;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * This class reinitialize Methods with FastMathUtils
@@ -55,7 +53,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public Vector add(@Nonnull org.bukkit.util.Vector vec) {
+	public @NotNull Vector add(@NotNull org.bukkit.util.Vector vec) {
 	    this.x += vec.getX();
 	    this.y += vec.getY();
 	    this.z += vec.getZ();
@@ -63,7 +61,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public Vector subtract(@Nonnull org.bukkit.util.Vector vec) {
+	public @NotNull Vector subtract(@NotNull org.bukkit.util.Vector vec) {
 	    this.x -= vec.getX();
 	    this.y -= vec.getY();
 	    this.z -= vec.getZ();
@@ -71,7 +69,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public Vector multiply(@Nonnull org.bukkit.util.Vector vec) {
+	public @NotNull Vector multiply(@NotNull org.bukkit.util.Vector vec) {
 	    this.x *= vec.getX();
 	    this.y *= vec.getY();
 	    this.z *= vec.getZ();
@@ -79,7 +77,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public Vector divide(@Nonnull org.bukkit.util.Vector vec) {
+	public @NotNull Vector divide(@NotNull org.bukkit.util.Vector vec) {
 		this.x /= vec.getX();
 		this.y /= vec.getY();
 	  this.z /= vec.getZ();
@@ -87,7 +85,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public Vector copy(@Nonnull org.bukkit.util.Vector vec) {
+	public @NotNull Vector copy(@NotNull org.bukkit.util.Vector vec) {
 	    this.x = vec.getX();
 	    this.y = vec.getY();
 	    this.z = vec.getZ();
@@ -105,24 +103,24 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public double distance(@Nonnull org.bukkit.util.Vector o) {
+	public double distance(@NotNull org.bukkit.util.Vector o) {
 		return FastMath.sqrtQuick(distanceSquared(o));
 	}
 	  
 	@Override
-	public double distanceSquared(@Nonnull org.bukkit.util.Vector o) {
+	public double distanceSquared(@NotNull org.bukkit.util.Vector o) {
 		return FastMath.pow2(this.x - o.getX()) + FastMath.pow2(this.y - o.getY()) + FastMath.pow2(this.z - o.getZ());
 	}
  
 	@Override
-	public float angle(@Nonnull org.bukkit.util.Vector other) {
+	public float angle(@NotNull org.bukkit.util.Vector other) {
 		double dot = FastMath.min(FastMath.max(dot(other) / length() * other.length(), -1.0D), 1.0D);
 	    
 	    return (float) FastMath.acos(dot);
 	}
  
 	@Override
-	public Vector midpoint(@Nonnull org.bukkit.util.Vector other) {
+	public @NotNull Vector midpoint(@NotNull org.bukkit.util.Vector other) {
 		this.x = (this.x + other.getX()) / 2.0D;
 		this.y = (this.y + other.getY()) / 2.0D;
 		this.z = (this.z + other.getZ()) / 2.0D;
@@ -130,7 +128,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public Vector getMidpoint(@Nonnull org.bukkit.util.Vector other) {
+	public @NotNull Vector getMidpoint(@NotNull org.bukkit.util.Vector other) {
 	    double x = (this.x + other.getX()) / 2.0D;
 	    double y = (this.y + other.getY()) / 2.0D;
 	    double z = (this.z + other.getZ()) / 2.0D;
@@ -138,7 +136,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 	  
 	@Override
-	public Vector multiply(int m) {
+	public @NotNull Vector multiply(int m) {
 	    this.x *= m;
 	    this.y *= m;
 	    this.z *= m;
@@ -146,7 +144,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public Vector multiply(double m) {
+	public @NotNull Vector multiply(double m) {
 	    this.x *= m;
 	    this.y *= m;
 	    this.z *= m;
@@ -154,7 +152,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public Vector multiply(float m) {
+	public @NotNull Vector multiply(float m) {
 	    this.x *= m;
 	    this.y *= m;
 	    this.z *= m;
@@ -162,7 +160,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public Vector crossProduct(@Nonnull org.bukkit.util.Vector o) {
+	public @NotNull Vector crossProduct(@NotNull org.bukkit.util.Vector o) {
 	    double newX = this.y * o.getZ() - o.getY() * this.z;
 	    double newY = this.z * o.getX() - o.getZ() * this.x;
 	    double newZ = this.x * o.getY() - o.getX() * this.y;
@@ -174,7 +172,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public Vector getCrossProduct(@Nonnull org.bukkit.util.Vector o) {
+	public @NotNull Vector getCrossProduct(@NotNull org.bukkit.util.Vector o) {
 		double x = this.y * o.getZ() - o.getY() * this.z;
 	    double y = this.z * o.getX() - o.getZ() * this.x;
 	    double z = this.x * o.getY() - o.getX() * this.y;
@@ -182,7 +180,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public Vector normalize() {
+	public @NotNull Vector normalize() {
 	    double length = length();
 	    
 	    this.x /= length;
@@ -201,7 +199,7 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 
 	@Override
-	public boolean isInSphere(@Nonnull org.bukkit.util.Vector origin, double radius) {
+	public boolean isInSphere(@NotNull org.bukkit.util.Vector origin, double radius) {
 		return (FastMath.pow2(origin.getX() - this.x) +
 				FastMath.pow2(origin.getY() - this.y) +
 				FastMath.pow2(origin.getZ() - this.z) <= FastMath.pow2(radius));
@@ -211,8 +209,8 @@ public class Vector extends org.bukkit.util.Vector {
 		return (FastMath.abs(lengthSquared() - 1.0D) < getEpsilon());
 	}
 
-	@Nonnull
-	public Vector rotateAroundX(double angle) {
+	@Override
+	public @NotNull Vector rotateAroundX(double angle) {
 		// create double wrapper
 		DoubleWrapper wrapper = new DoubleWrapper();
 		
@@ -225,8 +223,8 @@ public class Vector extends org.bukkit.util.Vector {
 	    return setY(y).setZ(z);
 	}
 
-	@Nonnull
-	public Vector rotateAroundY(double angle) {
+	@Override
+	public @NotNull Vector rotateAroundY(double angle) {
 		// create double wrapper
 		DoubleWrapper wrapper = new DoubleWrapper();
 		
@@ -239,8 +237,8 @@ public class Vector extends org.bukkit.util.Vector {
 	    return setX(x).setZ(z);
 	}
 
-	@Nonnull
-	public Vector rotateAroundZ(double angle) {
+	@Override
+	public @NotNull Vector rotateAroundZ(double angle) {
 		// create double wrapper
 		DoubleWrapper wrapper = new DoubleWrapper();
 		
@@ -252,17 +250,17 @@ public class Vector extends org.bukkit.util.Vector {
 	    double y = sin * getX() + cos * getY();
 	    return setX(x).setY(y);
 	}
-	  
-	@Nonnull
-	public Vector rotateAroundAxis(@Nonnull Vector axis, double angle) {
-		  Preconditions.checkArgument((axis != null), "The provided axis vector was null");
-	    
-		  return rotateAroundNonUnitAxis(axis.isNormalized() ? axis : axis.clone().normalize(), angle);
+
+	@NotNull
+	public Vector rotateAroundAxis(@NotNull Vector axis, double angle) {
+		Validate.notNull(axis, "The provided axis cannot be null");
+
+		return rotateAroundNonUnitAxis(axis.isNormalized() ? axis : axis.clone().normalize(), angle);
 	}
 
-	@Nonnull
-	public Vector rotateAroundNonUnitAxis(@Nonnull Vector axis, double angle) {
-	    Preconditions.checkArgument((axis != null), "The provided axis vector was null");
+	@Override
+	public @NotNull Vector rotateAroundNonUnitAxis(@NotNull org.bukkit.util.Vector axis, double angle) {
+		Validate.notNull(axis, "The provided axis cannot be null");
 	    
 	    double x = getX();
 	    double y = getY();
@@ -292,55 +290,55 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 	  
 	@Override
-	public Vector setX(int x) {
+	public @NotNull Vector setX(int x) {
 	    this.x = x;
 	    return this;
 	}
 
 	@Override
-	public Vector setX(double x) {
+	public @NotNull Vector setX(double x) {
 	    this.x = x;
 	    return this;
 	}
 	  
 	@Override
-	public Vector setX(float x) {
+	public @NotNull Vector setX(float x) {
 	    this.x = x;
 	    return this;
 	}
 
 	@Override
-	public Vector setY(int y) {
+	public @NotNull Vector setY(int y) {
 	    this.y = y;
 	    return this;
 	}
 
 	@Override
-	public Vector setY(double y) {
+	public @NotNull Vector setY(double y) {
 	    this.y = y;
 	    return this;
 	}
 
 	@Override
-	public Vector setY(float y) {
+	public @NotNull Vector setY(float y) {
 	    this.y = y;
 	    return this;
 	}
 
 	@Override
-	public Vector setZ(int z) {
+	public @NotNull Vector setZ(int z) {
 	    this.z = z;
 	    return this;
 	}
 
 	@Override
-	public Vector setZ(double z) {
+	public @NotNull Vector setZ(double z) {
 	    this.z = z;
 	    return this;
 	}
 
 	@Override
-	public Vector setZ(float z) {
+	public @NotNull Vector setZ(float z) {
 	    this.z = z;
 	    return this;
 	}
@@ -375,28 +373,28 @@ public class Vector extends org.bukkit.util.Vector {
 	}
 	  
 	@Override
-	public Vector clone() {
+	public @NotNull Vector clone() {
 		return (Vector) super.clone();
 	}
 	
-	@Nonnull
-	public static Vector getMinimum(@Nonnull org.bukkit.util.Vector v1, @Nonnull org.bukkit.util.Vector v2) {
+	@NotNull
+	public static Vector getMinimum(@NotNull org.bukkit.util.Vector v1, @NotNull org.bukkit.util.Vector v2) {
 		return new Vector(FastMath.min(v1.getX(), v2.getX()), FastMath.min(v1.getY(), v2.getY()), FastMath.min(v1.getZ(), v2.getZ()));
 	}
 
-	@Nonnull
-	public static Vector getMaximum(@Nonnull org.bukkit.util.Vector v1, @Nonnull org.bukkit.util.Vector v2) {
+	@NotNull
+	public static Vector getMaximum(@NotNull org.bukkit.util.Vector v1, @NotNull org.bukkit.util.Vector v2) {
 		return new Vector(FastMath.max(v1.getX(), v2.getX()), FastMath.max(v1.getY(), v2.getY()), FastMath.max(v1.getZ(), v2.getZ()));
 	}
 
-	@Nonnull
+	@NotNull
 	public static Vector getRandom() {
 		double[] coords = random.doubles(3).toArray();
 		return new Vector(coords[0], coords[1], coords[2]);
 	}
 	  
-	@Nonnull
-	public static Vector deserialize(@Nonnull Map<String, Object> args) {    
+	@NotNull
+	public static Vector deserialize(@NotNull Map<String, Object> args) {
 	    return new Vector(org.bukkit.util.Vector.deserialize(args));
 	}
 }

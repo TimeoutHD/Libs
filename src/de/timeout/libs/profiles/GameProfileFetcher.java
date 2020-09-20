@@ -13,8 +13,10 @@ import java.util.logging.Level;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.jetbrains.annotations.NotNull;
 
 import com.google.common.cache.LoadingCache;
 import com.mojang.authlib.GameProfile;
@@ -40,7 +42,10 @@ public class GameProfileFetcher implements Supplier<GameProfile> {
 	
 	private OfflinePlayer owner;
 	
-	public GameProfileFetcher(UUID owner) {
+	public GameProfileFetcher(@NotNull UUID owner) {
+		// Validate
+		Validate.notNull(owner, "Owner cannot be null");
+		
 		this.owner = Bukkit.getServer().getOfflinePlayer(owner);
 	}
 

@@ -1,6 +1,7 @@
 package de.timeout.libs.items;
 
 import java.lang.reflect.Field;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -26,6 +27,8 @@ import de.timeout.libs.BukkitReflections;
 import de.timeout.libs.Reflections;
 import de.timeout.libs.profiles.GameProfileFetcher;
 import net.md_5.bungee.api.ChatColor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class represents a PlayerSkull as ItemStack. Use this class only outside Main-Thread
@@ -37,8 +40,8 @@ public class PlayerSkull extends ItemStack {
 	private static final Class<?> craftmetaskullClass = BukkitReflections.getCraftBukkitClass("inventory.CraftMetaSkull");
 	private static final Class<?> craftskullClass = BukkitReflections.getCraftBukkitClass("block.CraftSkull");
 	
-	private static final Field metaProfileField = Reflections.getField(craftmetaskullClass, "profile");
-	private static final Field skullProfileField = Reflections.getField(craftskullClass, "profile");
+	private static final @NotNull Field metaProfileField = Objects.requireNonNull(Reflections.getField(craftmetaskullClass, "profile"));
+	private static final @NotNull Field skullProfileField = Objects.requireNonNull(Reflections.getField(craftskullClass, "profile"));
 	
 	private static final Base64 base64 = new Base64();
 	
@@ -49,7 +52,7 @@ public class PlayerSkull extends ItemStack {
 	public static final ItemStack ENDERDRAGON = new ItemStack(Material.DRAGON_HEAD);
 	public static final ItemStack STEVE = new ItemStack(Material.PLAYER_HEAD);
 	
-	private GameProfile profile;
+	private final GameProfile profile;
 	
 	/**
 	 * This Constructor creates a new Skull-ItemStack.
@@ -72,7 +75,13 @@ public class PlayerSkull extends ItemStack {
 		Reflections.setField(metaProfileField, meta, profile);
 		setItemMeta(meta);
 	}
-	
+
+	@Override
+	public @NotNull ItemMeta getItemMeta() {
+		// It's always there, because the item is never null and no air
+		return Objects.requireNonNull(super.getItemMeta());
+	}
+
 	/**
 	 * This Constructor creates a new Skull-ItemStack
 	 * @param amount the amount of this itemstack
@@ -96,7 +105,7 @@ public class PlayerSkull extends ItemStack {
         profile.getProperties().put("textures", new Property("textures", new String(encodedData)));
         // create ItemStack and get ItemMeta
         ItemStack skull = new ItemStackBuilder(STEVE).toItemStack();
-        ItemMeta meta = skull.getItemMeta();
+        ItemMeta meta = Objects.requireNonNull(skull.getItemMeta());
         // write Profile in ItemMeta
 		Reflections.setField(metaProfileField, meta, profile);
 		// set meta in skull
@@ -130,8 +139,8 @@ public class PlayerSkull extends ItemStack {
 	 * @param location the loation of the block
 	 * @return the block itself
 	 */
-	public Block toBlock(Location location) {
-		return this.toBlock(location.getWorld(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
+	public Block toBlock(@NotNull Location location) {
+		return this.toBlock(Objects.requireNonNull(location.getWorld()), location.getBlockX(), location.getBlockY(), location.getBlockZ());
 	}
 	
 	/**

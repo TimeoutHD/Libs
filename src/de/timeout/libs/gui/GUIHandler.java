@@ -74,26 +74,23 @@ class GUIHandler implements Listener {
 		HumanEntity player = event.getWhoClicked();
 		GUI gui = openGUIs.get(player);
 		
-		// check if player sees gui
-		if(gui != null) {
-			// check if user clicked on gui
-			if(event.getView().getTopInventory().equals(event.getClickedInventory())) {
-				// cancel event (Deny result is safer than cancel)
-				event.setResult(Result.DENY);
-				
-				// get item
-				ItemStack button = gui.getItem(event.getSlot());
-				// check if its a button
-				if(button instanceof Button) {
-					// call event
-					ButtonClickEvent guiEvent = new ButtonClickEvent(event, gui, (Button) button);
-					Bukkit.getPluginManager().callEvent(guiEvent);
-					
-					// check if guiEvent is cancelled
-					if(!guiEvent.isCancelled()) {
-						// call button accept
-						((Button) button).click(guiEvent);
-					}
+		// check if player sees gui && clicked on it as well
+		if(gui != null && event.getView().getTopInventory().equals(event.getClickedInventory())) {
+			// cancel event (Deny result is safer than cancel)
+			event.setResult(Result.DENY);
+
+			// get item
+			ItemStack button = gui.getItem(event.getSlot());
+			// check if its a button
+			if (button instanceof Button) {
+				// call event
+				ButtonClickEvent guiEvent = new ButtonClickEvent(event, gui, (Button) button);
+				Bukkit.getPluginManager().callEvent(guiEvent);
+
+				// check if guiEvent is cancelled
+				if (!guiEvent.isCancelled()) {
+					// call button accept
+					((Button) button).click(guiEvent);
 				}
 			}
 		}
@@ -101,7 +98,7 @@ class GUIHandler implements Listener {
 	
 	/**
 	 * Registers the player in listener.
-	 * Is called after {@link GUI#openGUI(HumanEntity)} was called
+	 * Is called after {@link GUI#openGUI(HumanEntity, String)} was called
 	 * @param viewer the player
 	 * @param gui the gui
 	 * 

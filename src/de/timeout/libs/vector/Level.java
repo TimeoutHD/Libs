@@ -3,8 +3,8 @@ package de.timeout.libs.vector;
 
 public class Level {
 
-	private Vector supportVector;
-	private Vector normalVector;
+	private final Vector supportVector;
+	private final Vector normalVector;
 	
 	public Level(Vector supportVector, Vector v, Vector u) {
 		this.supportVector = supportVector;

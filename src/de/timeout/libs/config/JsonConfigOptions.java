@@ -4,6 +4,7 @@ import javax.annotation.Nonnull;
 
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.FileConfigurationOptions;
+import org.jetbrains.annotations.NotNull;
 
 public class JsonConfigOptions extends FileConfigurationOptions {
 
@@ -12,30 +13,30 @@ public class JsonConfigOptions extends FileConfigurationOptions {
 	}
 
 	@Override
-	public JsonConfig configuration() {
+	public @NotNull JsonConfig configuration() {
 		return (JsonConfig) super.configuration();
 	}
 
 	@Override
-	public JsonConfigOptions copyDefaults(boolean value) {
+	public @NotNull JsonConfigOptions copyDefaults(boolean value) {
 		super.copyDefaults(value);
 		return this;
 	}
 
 	@Override
-	public JsonConfigOptions copyHeader(boolean value) {
+	public @NotNull JsonConfigOptions copyHeader(boolean value) {
 		super.copyHeader(value);
 		return this;
 	}
 
 	@Override
-	public JsonConfigOptions header(String value) {
+	public @NotNull JsonConfigOptions header(String value) {
 		super.header(value);
 		return this;
 	}
 
 	@Override
-	public JsonConfigOptions pathSeparator(char value) {
+	public @NotNull JsonConfigOptions pathSeparator(char value) {
 		super.pathSeparator(value);
 		return this;
 	}

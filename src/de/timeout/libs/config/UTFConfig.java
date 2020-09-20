@@ -55,7 +55,7 @@ public class UTFConfig extends YamlConfiguration {
 			// load Config from file content
 			load(file);
 		} catch (IOException | InvalidConfigurationException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Could not load Configuration " + file.getName(), e);
+			Bukkit.getLogger().log(Level.SEVERE, e, () -> "Could not load Configuration " + file.getName());
 		}
 	}
 	

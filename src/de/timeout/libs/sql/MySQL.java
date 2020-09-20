@@ -26,9 +26,9 @@ public class MySQL {
 	
 	private static final Executor executor = Executors.newFixedThreadPool(3);
 	
-	private String host;
-	private String database;
-	private int port;
+	private final String host;
+	private final String database;
+	private final int port;
 	
 	private Connection connection;
 	
@@ -170,6 +170,8 @@ public class MySQL {
 		CompletableFuture.runAsync(() -> {
 			// execute statement
 			try(ResultSet rs = statement.executeQuery()) {
+				// close statement
+				statement.close();
 				// apply function
 				if(query != null) query.accept(rs);
 			} catch(SQLException e) {
@@ -195,7 +197,10 @@ public class MySQL {
 			try {
 				// get result
 				boolean res = statement.execute();
-				
+
+				// close statement
+				statement.close();
+
 				// apply function if function exists
 				if(result != null) result.accept(res);
 			} catch (SQLException e) {

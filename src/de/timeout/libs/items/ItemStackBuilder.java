@@ -1,13 +1,11 @@
 package de.timeout.libs.items;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.logging.Level;
-
-import javax.annotation.Nonnegative;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
@@ -16,6 +14,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.NotNull;
 
 import de.timeout.libs.BukkitReflections;
 import de.timeout.libs.gui.Button;
@@ -77,7 +76,7 @@ public class ItemStackBuilder {
 	 */
 	public ItemStackBuilder setDisplayName(String displayName) {
 		// set DisplayName
-		ItemMeta meta = currentBuilding.getItemMeta();
+		ItemMeta meta = getSafeItemMeta(currentBuilding);
 		meta.setDisplayName(displayName);
 		currentBuilding.setItemMeta(meta);
 		// return this to continue
@@ -104,7 +103,7 @@ public class ItemStackBuilder {
 	 */
 	public ItemStackBuilder removeEnchantment(Enchantment enchantment) {
 		// remove enchantment
-		ItemMeta meta = currentBuilding.getItemMeta();
+		ItemMeta meta = getSafeItemMeta(currentBuilding);
 		meta.removeEnchant(enchantment);
 		currentBuilding.setItemMeta(meta);
 		// return this to continue
@@ -118,7 +117,7 @@ public class ItemStackBuilder {
 	 */
 	public ItemStackBuilder setLore(List<String> lore) {
 		// Set Lore for currentBuilding
-		ItemMeta meta = currentBuilding.getItemMeta();
+		ItemMeta meta = getSafeItemMeta(currentBuilding);
 		meta.setLore(lore);
 		currentBuilding.setItemMeta(meta);
 		// return this to continue
@@ -132,7 +131,7 @@ public class ItemStackBuilder {
 	 */
 	public ItemStackBuilder hideEnchantments(boolean result) {
 		// get Meta
-		ItemMeta meta = currentBuilding.getItemMeta();
+		ItemMeta meta = getSafeItemMeta(currentBuilding);
 		// show or hide enchantments
 		if(result) meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 		else meta.removeItemFlags(ItemFlag.HIDE_ENCHANTS);
@@ -148,7 +147,9 @@ public class ItemStackBuilder {
 	 * @return the builder to continue
 	 * @throws IllegalArgumentException if the amount is negative
 	 */
-	public ItemStackBuilder setAmount(@Nonnegative int amount) {
+	public ItemStackBuilder setAmount(int amount) {
+		Validate.isTrue(amount >= 0, "Amount must be positive");
+
 		// set Amount
 		currentBuilding.setAmount(amount);
 		// returng this to continue
@@ -165,7 +166,7 @@ public class ItemStackBuilder {
 		// Validate
 		Validate.notEmpty(lines, "new Lines cannot be empty or null");
 		// create new lore
-		List<String> newLore = new ArrayList<>(currentBuilding.getItemMeta().getLore());
+		List<String> newLore = new ArrayList<>(Objects.requireNonNull(getSafeItemMeta(currentBuilding).getLore()));
 		// add elements to lore
 		newLore.addAll(Arrays.asList(lines));
 		// execute setlore and return this to continue
@@ -190,8 +191,8 @@ public class ItemStackBuilder {
 	public ItemStackBuilder writeNBTInt(String key, int value) {
 		try {
 			writeNBT(key, value, "setInt", int.class);
-		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | InstantiationException e) {
-			Bukkit.getLogger().log(Level.SEVERE, NBT_ERROR + key, e);
+		} catch (ReflectiveOperationException e) {
+			Bukkit.getLogger().log(Level.SEVERE, e, () -> NBT_ERROR + key);
 		}
 		// return this to continue
 		return this;
@@ -203,11 +204,13 @@ public class ItemStackBuilder {
 	 * @param value the value you want to write in this key
 	 * @return the builder to continue
 	 */
-	public ItemStackBuilder writeNBTBoolean(String key, boolean value) {
+	public ItemStackBuilder writeNBTBoolean(@NotNull String key, boolean value) {
+		// Validate
+		
 		try {
 			writeNBT(key, value, "setBoolean", boolean.class);
-		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | InstantiationException e) {
-			Bukkit.getLogger().log(Level.SEVERE, NBT_ERROR + key, e);
+		} catch (ReflectiveOperationException e) {
+			Bukkit.getLogger().log(Level.SEVERE, e, () -> NBT_ERROR + key);
 		}
 		// return this to continue
 		return this;
@@ -219,11 +222,14 @@ public class ItemStackBuilder {
 	 * @param value the value you want to write in this key
 	 * @return the builder to continue
 	 */
-	public ItemStackBuilder writeNBTString(String key, String value) {	 
+	public ItemStackBuilder writeNBTString(@NotNull String key, String value) {	 
+		// Validate
+		Validate.isTrue(!key.isEmpty(), "Unable to write NBT without a key");
+
 		try {
 			writeNBT(key, value, "setString", String.class);
-		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | InstantiationException e) {
-			Bukkit.getLogger().log(Level.SEVERE, NBT_ERROR + key, e);
+		} catch (ReflectiveOperationException e) {
+			Bukkit.getLogger().log(Level.SEVERE, e, () -> NBT_ERROR + key);
 		}
 		// return this to continue
 		return this;
@@ -237,13 +243,9 @@ public class ItemStackBuilder {
 	 * @param value the data itself
 	 * @param methodName the name of the internal NMS-Method to insert the data with the right type at the right place
 	 * @param clazz the class instance of the type T
-	 * @throws IllegalAccessException if any method cannot be accessed by Reflections
-	 * @throws InvocationTargetException This should never happen
-	 * @throws NoSuchMethodException if the executed method does not exists
-	 * @throws SecurityException if there was an unexpected security error inside your jvm
-	 * @throws InstantiationException if no new nbt tab compound could instantiated
+	 * @throws ReflectiveOperationException if working with reflections failed
 	 */
-	protected <T> void writeNBT(String key, T value, String methodName, Class<T> clazz) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SecurityException, InstantiationException {
+	protected <T> void writeNBT(String key, T value, String methodName, Class<T> clazz) throws ReflectiveOperationException {
 		// create nms-copy
 		Object nms = ItemStacks.asNMSCopy(currentBuilding);
 		if(nms != null) {
@@ -261,5 +263,15 @@ public class ItemStackBuilder {
 				currentBuilding = ItemStacks.asBukkitCopy(nms);
 			}
 		}
+	}
+	
+	protected static @NotNull ItemMeta getSafeItemMeta(ItemStack item) {
+		// an itemmeta is only null when the item is air or null
+		if(item != null && item.getType() == Material.AIR) {
+			return Objects.requireNonNull(item.getItemMeta());
+		}
+
+		// Throws a new IllegalArgumentException if the ItemMeta is null
+		throw new IllegalStateException();
 	}
 }

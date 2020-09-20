@@ -3,14 +3,14 @@ package de.timeout.libs;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.annotation.Nonnull;
-
 import org.apache.commons.lang.Validate;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import com.mojang.authlib.GameProfile;
 
@@ -19,7 +19,7 @@ public final class Players {
 	private static final Class<?> packetClass = BukkitReflections.getNMSClass("Packet");
 	private static final Class<?> entityhumanClass = BukkitReflections.getNMSClass("EntityHuman");
 	
-	private static final Field activeContainer = Reflections.getField(entityhumanClass, "activeContainer");
+	private static final @NotNull Field activeContainer = Objects.requireNonNull(Reflections.getField(entityhumanClass, "activeContainer"));
 	
 	private Players() {
 		/* UTIL-Classes does not need any instantiations */
@@ -30,14 +30,13 @@ public final class Players {
 	 * @param player the owner of the GameProfile
 	 * @return the Gameprofile
 	 */
-	public static GameProfile getGameProfile(Player player) {
+	public static GameProfile getGameProfile(@NotNull Player player) {
 		 try {
 			Class<?> craftplayerClass = BukkitReflections.getCraftBukkitClass("entity.CraftPlayer");
 			return craftplayerClass != null ? (GameProfile) craftplayerClass.getMethod("getProfile").invoke(player) : null;
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-				| SecurityException e) {
-			Logger.getGlobal().log(Level.INFO, "Could not get GameProfile from Player " + player.getName(), e);
-		}
+		 } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+			Logger.getGlobal().log(Level.INFO, e, () -> "Could not get GameProfile from Player " + player.getName());
+		 }
 		 return new GameProfile(player.getUniqueId(), player.getName());
 	}
 	
@@ -47,7 +46,7 @@ public final class Players {
 	 * @return the EntityPlayer as Object
 	 * @throws ReflectiveOperationException if there was an error
 	 */
-	public static Object getEntityPlayer(Player player) throws ReflectiveOperationException {
+	public static Object getEntityPlayer(@NotNull Player player) throws ReflectiveOperationException {
 		Method getHandle = player.getClass().getMethod("getHandle");
 		return getHandle.invoke(player);
 	}
@@ -55,23 +54,16 @@ public final class Players {
 	/**
 	 * This method returns the active container of the player.
 	 * @param player the player itself
-	 * @return the active container of the player
+	 * @return the active container of the player. Is null if there is no active container
+	 * @throws ReflectiveOperationException If an internal Exception happens. Please report this exception
+	 * @throws IllegalArgumentException if the player is null
 	 */
-	public static Object getActiveContainer(@Nonnull Player player) {
-		// Validate
-		Validate.notNull(player, "Player cannot be null");
-		
-		try {
-			// get EntityPlayer
-			Object entityPlayer = getEntityPlayer(player);
+	public static Object getActiveContainer(@NotNull Player player) throws ReflectiveOperationException {
+		// get EntityPlayer
+		Object entityPlayer = getEntityPlayer(player);
 			
-			// return active container
-			return Reflections.getValue(activeContainer, entityPlayer);
-		} catch (ReflectiveOperationException e) {
-			Bukkit.getLogger().log(Level.WARNING, String.format("Unable to get active container of player %s", player.getName()), e);
-		}
-		
-		return null;
+		// return active container
+		return Reflections.getValue(activeContainer, entityPlayer);
 	}
 	
 	/**
@@ -80,7 +72,11 @@ public final class Players {
 	 * @return the PlayerConnection as Object
 	 * @throws ReflectiveOperationException if there was an error
 	 */
-	public static Object getPlayerConnection(Player player) throws ReflectiveOperationException {
+	@NotNull
+	public static Object getPlayerConnection(@NotNull Player player) throws ReflectiveOperationException {
+		// Validate
+		Validate.notNull(player, "Player cannot be null");
+		
 		Object nmsp = getEntityPlayer(player);
 		Field con = nmsp.getClass().getField("playerConnection");
 		return con.get(nmsp);
@@ -90,11 +86,21 @@ public final class Players {
 	 * This method sends a Packet to a Player
 	 * @param player the Player
 	 * @param packet the packet
-	 * @throws ReflectiveOperationException if the object is not a packet
 	 */
-	public static void sendPacket(Player player, Object packet) throws ReflectiveOperationException {
-		Object playerConnection = getPlayerConnection(player);
-		playerConnection.getClass().getMethod("sendPacket", packetClass).invoke(playerConnection, packet);
+	@NotNull
+	public static void sendPacket(@NotNull Player player, @NotNull Object packet) {
+		// Validate
+		Validate.notNull(player, "Player cannot be null");
+		Validate.notNull(packet, "Packet cannot be null");
+		
+		CompletableFuture.runAsync(() -> {
+			try {
+				Object playerConnection = getPlayerConnection(player);
+				playerConnection.getClass().getMethod("sendPacket", packetClass).invoke(playerConnection, packet);
+			} catch (ReflectiveOperationException e) {
+				Logger.getGlobal().log(Level.WARNING, "Unable to send packet to player", e);
+			}
+		});
 	}
 	
 }

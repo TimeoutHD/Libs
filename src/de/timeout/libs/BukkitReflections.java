@@ -1,4 +1,5 @@
 package de.timeout.libs;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -57,7 +58,7 @@ public final class BukkitReflections {
 		try {
 			return Class.forName(name);
 		} catch (ClassNotFoundException e) {
-			Logger.getGlobal().log(Level.WARNING, "Could not find Class " + name, e);
+			Logger.getGlobal().log(Level.WARNING, e, () ->"Could not find Class " + name);
 		}
 		return null;
 	}

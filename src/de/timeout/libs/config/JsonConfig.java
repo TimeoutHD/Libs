@@ -11,8 +11,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 
-import javax.annotation.Nonnull;
-
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
@@ -23,6 +21,7 @@ import org.bukkit.craftbukkit.libs.org.apache.commons.io.IOUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Represents a FileConfiguration which is written in JSON
@@ -40,7 +39,7 @@ public class JsonConfig extends FileConfiguration {
 	 * @param json the Json-String. Cannot be null
 	 * @throws IllegalArgumentException if the Json-String is null
 	 */
-	public JsonConfig(@Nonnull String json) {
+	public JsonConfig(@NotNull String json) {
 		Validate.notNull(json, "Json-Data cannot be null");
 		try {
 			loadFromString(json);
@@ -55,20 +54,20 @@ public class JsonConfig extends FileConfiguration {
 	 * @param json the .json file
 	 * @throws IllegalArgumentException if the file is null
 	 */
-	public JsonConfig(@Nonnull File json) {
+	public JsonConfig(@NotNull File json) {
 		// read from File
 		Validate.notNull(json, "File cannot be null");
 		// load if file exists
 		try {
 			loadFromString(json.exists() && json.length() > 0 ? FileUtils.readFileToString(json, StandardCharsets.UTF_8) : "{}");
 		} catch (InvalidConfigurationException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Cannot load Configuration from " + json.getName(), e);			
+			Bukkit.getLogger().log(Level.SEVERE, e, () -> "Cannot load Configuration from " + json.getName());
 		} catch (IOException e) {
 			Bukkit.getLogger().log(Level.SEVERE, String.format("Cannot load %s. IO-Exception: ", json.getName()), e);
 		}
 	}
 	
-	public JsonConfig(InputStream json) {
+	public JsonConfig(@NotNull InputStream json) {
 		// Validate
 		Validate.notNull(json, "InputStream cannot be null");
 		try {
@@ -81,7 +80,7 @@ public class JsonConfig extends FileConfiguration {
 	}
 
 	@Override
-	public String saveToString() {
+	public @NotNull String saveToString() {
 		// return to string
 		return GSON.toJson(getValues(false));
 	}
@@ -91,7 +90,7 @@ public class JsonConfig extends FileConfiguration {
 	 * It returns null in any case
 	 */
 	@Override
-	public JsonConfigOptions options() {
+	public @NotNull JsonConfigOptions options() {
 		// return options
 		return (JsonConfigOptions) Optional.ofNullable(options).orElseGet(() -> {
 			// create new options
@@ -102,13 +101,13 @@ public class JsonConfig extends FileConfiguration {
 	}
 
 	@Override
-	protected @Nonnull String buildHeader() {
+	protected @NotNull String buildHeader() {
 		// JSON does not support any comments
 		return "";
 	}
 
 	@Override
-	public void loadFromString(@Nonnull String data) throws InvalidConfigurationException {
+	public void loadFromString(@NotNull String data) throws InvalidConfigurationException {
 		// Validate
 		Validate.notNull(data, "String cannot be null");
 		// only continue if data is not empty
@@ -120,7 +119,7 @@ public class JsonConfig extends FileConfiguration {
 		}
 	}
 	
-	private void convertMapsToSection(@Nonnull Map<?, ?> map, @Nonnull ConfigurationSection section) {
+	private void convertMapsToSection(@NotNull Map<?, ?> map, @NotNull ConfigurationSection section) {
 		// Validate
 		Validate.notNull(map, "Map cannot be null");
 		Validate.notNull(section, "MemorySection cannot be null");
@@ -131,12 +130,11 @@ public class JsonConfig extends FileConfiguration {
 			// override map
 			map = (Map<?, ?>) root;
 			// walk through their entries
-			map.entrySet().forEach(entry -> {
+			map.forEach((key1, value) -> {
 				// define key and value to avoid compileerror in datatypes
-				String key = entry.getKey().toString();
-				Object value = entry.getValue();
+				String key = key1.toString();
 				// apply same to childs
-				if(value instanceof Map) {
+				if (value instanceof Map) {
 					// recursive call for submemorysecitions
 					convertMapsToSection((Map<?, ?>) value, section.createSection(key));
 				} else section.set(key, value);
@@ -148,15 +146,15 @@ public class JsonConfig extends FileConfiguration {
 		// create map
 		Map<String, Object> applied = new HashMap<>(map.size());
 		// run through map
-		map.entrySet().forEach(entry -> {
+		map.forEach((key, value) -> {
 			// check data type
-			if(entry.getValue() instanceof Map) {
+			if (value instanceof Map) {
 				// apply mao
-				applied.put(entry.getKey().toString(), applyMapType(applied));
-			} else if(entry.getValue() instanceof List) {
+				applied.put(key.toString(), applyMapType(applied));
+			} else if (value instanceof List) {
 				// apply list
-				applied.put(entry.getKey().toString(), applyListType((List<?>) entry.getValue()));
-			} else applied.put(entry.getKey().toString(), entry.getValue());
+				applied.put(key.toString(), applyListType((List<?>) value));
+			} else applied.put(key.toString(), value);
 		});
 		// reutrn map
 		return applied;

@@ -2,17 +2,9 @@ package de.timeout.libs.gui;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Level;
-
-import javax.annotation.Nonnegative;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
@@ -31,20 +23,22 @@ import de.timeout.libs.gui.event.GUICloseEvent;
 import de.timeout.libs.gui.event.GUIOpenEvent;
 import de.timeout.libs.items.ItemStackBuilder;
 import net.md_5.bungee.api.ChatColor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class GUI {
 		
 	private static final GUIHandler handler = new GUIHandler();
 
-	private static final Class<?> craftinventoryviewClass = BukkitReflections.getCraftBukkitClass("inventory.CraftInventoryView");
-	private static final Class<?> chatmessageClass = BukkitReflections.getNMSClass("ChatMessage");
-	private static final Class<?> containerClass = BukkitReflections.getNMSClass("Container");
-	private static final Class<?> containersClass = BukkitReflections.getNMSClass("Containers");
-	private static final Class<?> ichatbasecomponentClass = BukkitReflections.getNMSClass("IChatBaseComponent");
-	private static final Class<?> packetplayoutopenwindowClass = BukkitReflections.getNMSClass("PacketPlayOutOpenWindow");
+	private static final @NotNull  Class<?> craftinventoryviewClass = BukkitReflections.getCraftBukkitClass("inventory.CraftInventoryView");
+	private static final @NotNull Class<?> chatmessageClass = BukkitReflections.getNMSClass("ChatMessage");
+	private static final @NotNull Class<?> containerClass = BukkitReflections.getNMSClass("Container");
+	private static final @NotNull Class<?> containersClass = BukkitReflections.getNMSClass("Containers");
+	private static final @NotNull Class<?> ichatbasecomponentClass = BukkitReflections.getNMSClass("IChatBaseComponent");
+	private static final @NotNull Class<?> packetplayoutopenwindowClass = BukkitReflections.getNMSClass("PacketPlayOutOpenWindow");
 	
-	private static final Field titleField = Reflections.getField(containerClass, "title");
-	private static final Field windowidField = Reflections.getField(containerClass, "windowId");
+	private static final @NotNull Field titleField = Objects.requireNonNull(Reflections.getField(containerClass, "title"));
+	private static final @NotNull Field windowidField = Objects.requireNonNull(Reflections.getField(containerClass, "windowId"));
 	
 	protected final List<InventoryView> viewers = new ArrayList<>();
 	protected final List<GUIInteractable<?>> interactors;
@@ -57,30 +51,32 @@ public class GUI {
 	/**
 	 * This constructor creates a new gui with a certain design. Note that every itemstack is not a button.
 	 * You must initialize your buttons first with the Method 
-	 * @param design
+	 * @param design the inventory design
 	 */
-	public GUI(@Nonnull Inventory design) {
+	public GUI(@NotNull Inventory design) {
 		this(design, Material.GRAY_STAINED_GLASS_PANE);
 	}
 	
-	public GUI(@Nonnull Inventory design, Material background) {
+	public GUI(@NotNull Inventory design, Material background) {
 		this(design, background, null);
 	}
 
 	
-	public GUI(@Nonnull Inventory design, Material background, Consumer<GUICloseEvent> event) {
+	public GUI(@NotNull Inventory design, Material background, Consumer<GUICloseEvent> event) {
 		// Validate
 		Validate.notNull(design, "Inventory-Design cannot be null");
 		
 		// initialize design and slot for Buttons
 		this.background = Optional.ofNullable(background).orElse(Material.GRAY_STAINED_GLASS_PANE);
 		this.design = new ItemStack[design.getSize()];
-		this.interactors = Arrays.asList(new GUIInteractable[design.getSize()]);
+		this.interactors = new ArrayList<>(design.getSize());
 		
 		// apply design
 		for(int i = 0; i < design.getSize(); i++) {
 			setItem(i, design.getItem(i));
 		}
+
+		closeAction = event;
 	}
 	
 	/**
@@ -88,7 +84,7 @@ public class GUI {
 	 * @param slot the slot of the item
 	 * @param item the item or button itself
 	 */
-	public void setItem(@Nonnegative int slot, ItemStack item) {
+	public void setItem(int slot, ItemStack item) {
 		// check if slot is valid
 		if(slot >= 0 && slot < design.length) {
 			// insert background if item is null
@@ -134,7 +130,7 @@ public class GUI {
 	 * @deprecated Use GUI#setItem(slot, button) instead 
 	 */
 	@Deprecated
-	public void registerButton(@Nonnegative int slot, Consumer<ButtonClickEvent> click) {
+	public void registerButton(int slot, Consumer<ButtonClickEvent> click) {
 		setItem(slot, new Button(getItem(slot), click));
 	}
 	
@@ -143,7 +139,7 @@ public class GUI {
 	 * The ItemStack represents the design of the button.
 	 * 
 	 * @param slot the slot where the button should be
-	 * @param item the ItemStack-Design of the Button
+	 * @param design the ItemStack-Design of the Button
 	 * @param click what happens when a player clicks the button
 	 * @throws IllegalArgumentException if the design is null or the slot is out of range
 	 * 
@@ -157,7 +153,7 @@ public class GUI {
 	 * @deprecated Use GUI#setItem(slot, button) instead 
 	 */
 	@Deprecated
-	public void registerButton(@Nonnegative int slot, ItemStack design, Consumer<ButtonClickEvent> click) {
+	public void registerButton(int slot, ItemStack design, Consumer<ButtonClickEvent> click) {
 		setItem(slot, new Button(design, click));
 	}
 	
@@ -170,7 +166,7 @@ public class GUI {
 	 * @deprecated Use GUI#setItem(slot, button) instead 
 	 */
 	@Deprecated
-	public void registerButton(@Nonnegative int slot, Button button) {
+	public void registerButton(int slot, Button button) {
 		// call method
 		this.registerButton(slot, button.clone(), button.getClickFunction());
 	}
@@ -204,7 +200,7 @@ public class GUI {
 	
 	/**
 	 * This method returns the uniqueID of this GUI
-	 * @return
+	 * @return the unique-id of the gui
 	 */
 	public UUID getUniqueID() {
 		return uuid;
@@ -212,7 +208,7 @@ public class GUI {
 	
 	/**
 	 * This method returns the design of the gui
-	 * @return
+	 * @return the design of the gui
 	 */
 	public Inventory getDesign() {
 		return createGUI(null);
@@ -226,7 +222,7 @@ public class GUI {
 	 * @throws IllegalArgumentException if the viewer is null
 	 * 
 	 */
-	public String getTitle(@Nonnull HumanEntity viewer) {
+	public String getTitle(@NotNull HumanEntity viewer) {
 		// Validate
 		Validate.notNull(viewer, "Viewer cannot be null");
 		
@@ -241,7 +237,7 @@ public class GUI {
 	 */
 	private Inventory createGUI(String name) {
 		// Create new inventory
-		Inventory inv = Bukkit.createInventory(null, design.length, name);
+		Inventory inv = Bukkit.createInventory(null, design.length, Optional.ofNullable(name).orElse(""));
 		// add all designs to inv
 		for(int i = 0; i < design.length; i++) inv.setItem(i, getItem(i));
 		
@@ -249,12 +245,12 @@ public class GUI {
 	}
 	
 	/**
-	 * 
-	 * @param entity
-	 * @return
+	 * Returns the current gui view of the human entity
+	 * @param entity the entity's view you want to get
+	 * @return the view or null if the entity does not have this gui open
 	 */
 	@Nullable
-	public InventoryView getView(@Nonnull HumanEntity entity) {
+	public InventoryView getView(@NotNull HumanEntity entity) {
 		// Validate
 		Validate.notNull(entity, "Viewer cannot be null");
 
@@ -263,11 +259,11 @@ public class GUI {
 				.stream()
 				.filter(view -> view.getPlayer().equals(entity))
 				.findAny()
-				.orElseGet(null);
+				.orElse(null);
 		
 	}
 	
-	public void setTitle(@Nonnull Player viewer, String title) {
+	public void setTitle(@NotNull Player viewer, String title) {
 		// Validate
 		Validate.notNull(viewer, "Viewer cannot be null");
 		
@@ -288,7 +284,7 @@ public class GUI {
 				// create update packet
 				Object packet = packetplayoutopenwindowClass
 						.getConstructor(int.class, containersClass, ichatbasecomponentClass)
-						.newInstance(Reflections.getValue(windowidField, activeContainer), getContainerType(), chatComponent);
+						.newInstance(((Integer) Reflections.getValue(windowidField, activeContainer)), getContainerType(), chatComponent);
 				
 				// send packet
 				Players.sendPacket(viewer, packet);
@@ -320,7 +316,7 @@ public class GUI {
 			Object container = craftinventoryviewClass.getMethod("getHandle").invoke(view);
 			
 			// insert chatcomponent into container
-			Reflections.setField(titleField, container, titleComponent);
+			Reflections.setValue(titleField, container, titleComponent);
 		} catch (IllegalAccessException e) {
 			Bukkit.getLogger().log(Level.WARNING, "Unable to access method CraftInventoryView#getHandle", e);
 		} catch (InvocationTargetException e) {

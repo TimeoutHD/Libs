@@ -3,10 +3,9 @@ package de.timeout.libs.gui;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import javax.annotation.Nonnull;
-
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import de.timeout.libs.gui.event.ButtonClickEvent;
 
@@ -30,7 +29,7 @@ public class Button extends ItemStack implements GUIInteractable<ButtonClickEven
 	 * @param button the button you want to clone
 	 * @throws IllegalArgumentException if the Button is null
 	 */
-	public Button(@Nonnull Button button) {
+	public Button(@NotNull Button button) {
 		this(button.clone(), button.consumer);
 	}
 	
