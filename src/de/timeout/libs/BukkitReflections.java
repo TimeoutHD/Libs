@@ -3,12 +3,17 @@ package de.timeout.libs;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang.ClassUtils;
 import org.bukkit.Bukkit;
 
 public final class BukkitReflections {
 	
 	private static final String VERSION = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
-		
+
+	private BukkitReflections() {
+		/* Bukkit-Reflections does not need a Constructor */
+	}
+
 	/**
 	 * This method return an NMS-Class, which has a certain name
 	 * @param nmsClass the name of the NMS-Class
@@ -56,7 +61,7 @@ public final class BukkitReflections {
 	private static Class<?> loadClass(String packagename, String clazz) {
 		String name = String.format(packagename, VERSION, clazz);
 		try {
-			return Class.forName(name);
+			return ClassUtils.getClass(name);
 		} catch (ClassNotFoundException e) {
 			Logger.getGlobal().log(Level.WARNING, e, () ->"Could not find Class " + name);
 		}

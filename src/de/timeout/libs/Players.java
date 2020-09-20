@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.Validate;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 

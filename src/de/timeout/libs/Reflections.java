@@ -8,7 +8,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.ClassUtils;
 import org.apache.commons.lang.Validate;
+import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.commons.lang.reflect.MethodUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,14 +29,14 @@ public class Reflections {
 	public static Field getField(Class<?> clazz, String... names) {
 		// if names is not empty
 		if(names.length != 0) {
-			try {
-				// get Field and set executable
-				Field field = clazz.getField(names[0]);
-				field.setAccessible(true);
-				
-				// return field
+			// get Field and set executable
+			Field field = FieldUtils.getField(clazz, names[0], true);
+
+			// check if field was found
+			if(field != null) {
+				// return found field
 				return field;
-			} catch (NoSuchFieldException e) {
+			} else {
 				// Field not found recursive execute without first element
 				return getField(clazz, (String[]) ArrayUtils.subarray(names, 1, names.length));
 			}
@@ -65,16 +68,9 @@ public class Reflections {
 	
 	@Nullable
 	private static Field getField(Class<?> clazz, Class<?> fieldType, String name) {
-		Field field = null;
-		
 		// try to get Field by name
-		try {
-			field = clazz.getField(name);
-			field.setAccessible(true);
-		} catch (NoSuchFieldException e) {
-			Logger.getGlobal().log(Level.WARNING, String.format("Unable to find field %s in class %s", name, clazz.getCanonicalName()));
-		}
-		
+		Field field = FieldUtils.getField(clazz, name, true);
+
 		return field != null && field.getType().equals(fieldType) ? field : null;
 	}
 
@@ -84,17 +80,9 @@ public class Reflections {
 	 * @param name the fieldname
 	 * @return the field itself
 	 */
-	@Nullable
+	@NotNull
 	public static Field getField(Class<?> clazz, String name) {
-			try {
-				Field field = clazz.getField(name);
-			    field.setAccessible(true);
-			      
-			    return field;
-			} catch (NoSuchFieldException | SecurityException e) {
-				Logger.getGlobal().log(Level.SEVERE, String.format("Cannot get Field %s in Class %s", name, clazz.getSimpleName()), e);
-			}
-		return null;
+		return FieldUtils.getField(clazz, name, true);
 	}
 	
 	/**
@@ -103,7 +91,7 @@ public class Reflections {
 	 * @param name the name of the field
 	 * @return the field itself
 	 */
-	@Nullable
+	@NotNull
 	public static Field getField(Object obj, String name) {
 		return getField(obj.getClass(), name);
 	}
@@ -114,13 +102,14 @@ public class Reflections {
 	 * @param obj the object you want to read
 	 * @return the value, which you are looking for. null if there were an error
 	 */
+	@Nullable
 	public static Object getValue(Field field, Object obj) {
 		try {
-			field.setAccessible(true);
-			return field.get(obj);
+			return FieldUtils.readField(field, obj, true);
 		} catch (IllegalAccessException e) {
 			Logger.getGlobal().log(Level.SEVERE, String.format("Could not get value from field %s in %s", field.getName(), obj.getClass().getSimpleName()), e);
 		}
+
 		return null;
 	}
 	
@@ -149,7 +138,7 @@ public class Reflections {
 	@Nullable
 	public static Class<?> getClass(String classpath) {
 		try {
-			return Class.forName(classpath);
+			return ClassUtils.getClass(classpath);
 		} catch (ClassNotFoundException e) {
 			Logger.getGlobal().log(Level.SEVERE, e, () -> "Class " + classpath + " not found");
 		}
@@ -166,14 +155,12 @@ public class Reflections {
 		// Validate
 		Validate.notNull(field, "Field cannot be null");
 		Validate.notNull(obj, "Target cannot be null");
-		
+
 		try {
-			field.setAccessible(true);
-			field.set(obj, value);
-			field.setAccessible(false);
-		} catch (IllegalArgumentException | IllegalAccessException e) {
-			Logger.getGlobal().log(Level.SEVERE, e, () -> "Could not set Value in Field " + field.getName() +
-					" in Class " + obj.getClass().getName());
+			FieldUtils.writeField(field, obj, value, true);
+		} catch (IllegalAccessException e) {
+			Logger.getGlobal().log(Level.WARNING, String.format("Unable to write Value %s in Field %s of class %s"
+					, value.toString(), field.getName(), obj.getClass().getName()));
 		}
 	}
 	
