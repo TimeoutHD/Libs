@@ -1,6 +1,6 @@
 package de.timeout.libs.gui.event;
 
-import javax.annotation.Nonnull;
+import javax.annotation.NotNull;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.event.HandlerList;
@@ -14,7 +14,7 @@ public class GUICloseEvent extends InventoryCloseEvent {
 	
 	private GUI gui;
 	
-	public GUICloseEvent(@Nonnull InventoryCloseEvent parent, @Nonnull GUI gui) {
+	public GUICloseEvent(@NotNull InventoryCloseEvent parent, @NotNull GUI gui) {
 		super(parent.getView());
 		
 		Validate.notNull(gui, "GUI cannot be null");
@@ -30,7 +30,7 @@ public class GUICloseEvent extends InventoryCloseEvent {
 		return getHandlerList();
 	}
 	
-	@Nonnull
+	@NotNull
 	public GUI getGUI() {
 		return gui;
 	}

@@ -1,6 +1,6 @@
 package de.timeout.libs.gui.event;
 
-import javax.annotation.Nonnull;
+import javax.annotation.NotNull;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang.Validate;
@@ -26,7 +26,7 @@ public class GUIOpenEvent extends Event implements Cancellable {
 	
 	private boolean cancel;
 
-	public GUIOpenEvent(@Nonnull HumanEntity player, @Nonnull GUI gui, @Nullable String name) {
+	public GUIOpenEvent(@NotNull HumanEntity player, @NotNull GUI gui, @Nullable String name) {
 		Validate.notNull(gui, "GUI cannot be null");
 		Validate.notNull(player, "Player cannot be null");
 		
@@ -39,7 +39,7 @@ public class GUIOpenEvent extends Event implements Cancellable {
 	 * Returns the handlerlist of the event
 	 * @return the handlerlist of the event
 	 */
-	@Nonnull
+	@NotNull
 	public static HandlerList getHandlerList() {
 		return handlers;
 	}
@@ -53,7 +53,7 @@ public class GUIOpenEvent extends Event implements Cancellable {
 	 * Returns the opened gui
 	 * @return the opened gui
 	 */
-	@Nonnull
+	@NotNull
 	public GUI getGUI() {
 		return gui;
 	}
@@ -62,12 +62,12 @@ public class GUIOpenEvent extends Event implements Cancellable {
 	 * Returns the player of this event
 	 * @return the player. Cannot be null
 	 */
-	@Nonnull
+	@NotNull
 	public HumanEntity getPlayer() {
 		return player;
 	}
 	
-	@Nonnull
+	@NotNull
 	public String getName() {
 		return name;
 	}

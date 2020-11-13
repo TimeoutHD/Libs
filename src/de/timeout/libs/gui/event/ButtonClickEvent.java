@@ -1,6 +1,6 @@
 package de.timeout.libs.gui.event;
 
-import javax.annotation.Nonnull;
+import javax.annotation.NotNull;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -23,7 +23,7 @@ public class ButtonClickEvent extends GUIInteractEvent {
 	 * @param gui the clicked gui
 	 * @param button the button which is clicked
 	 */
-	public ButtonClickEvent(@Nonnull InventoryClickEvent event, @Nonnull GUI gui, @Nonnull Button button) {
+	public ButtonClickEvent(@NotNull InventoryClickEvent event, @NotNull GUI gui, @NotNull Button button) {
 		super(event, gui);
 		
 		Validate.notNull(button, "Button cannot be null");
@@ -33,7 +33,7 @@ public class ButtonClickEvent extends GUIInteractEvent {
 	/**
 	 * returns the button which was clicked by the player
 	 */
-	@Nonnull
+	@NotNull
 	public Button getButton() {
 		return button;
 	}

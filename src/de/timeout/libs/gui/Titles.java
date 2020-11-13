@@ -27,7 +27,7 @@ public class Titles {
 	private static final Class<?> playerconnectionClass = BukkitReflections.getNMSClass("PlayerConnection");
 	private static final Class<?> packetplayoutchatClass = BukkitReflections.getNMSClass("PacketPlayOutChat");
 	
-	private static final @NotNull Field playerconnectionField = Objects.requireNonNull(Reflections.getField(entityplayerClass, "playerConnection"));
+	private static final @NotNull Field playerconnectionField = Objects.requireNotNull(Reflections.getField(entityplayerClass, "playerConnection"));
 	
 	private Titles() {
 		/* EMPTY, cause Util-Class */
@@ -45,8 +45,8 @@ public class Titles {
 		try {
 			// Define Packet
 			Object packet = packetplayouttitleClass.getConstructor(enumtitleactionClass, ichatbasecomponentClass, int.class, int.class, int.class)
-					.newInstance(Objects.requireNonNull(enumtitleactionClass).getField(type).get(enumtitleactionClass),
-							Objects.requireNonNull(chatserializerClass).getMethod("a", String.class).invoke(chatserializerClass, createJsonObject(msg)), fadein, stay, fadeout);
+					.newInstance(Objects.requireNotNull(enumtitleactionClass).getField(type).get(enumtitleactionClass),
+							Objects.requireNotNull(chatserializerClass).getMethod("a", String.class).invoke(chatserializerClass, createJsonObject(msg)), fadein, stay, fadeout);
 			// Send packet
 			playerconnectionClass.getMethod(SENDPACKET, packetClass).invoke(Reflections.getValue(playerconnectionField, Players.getEntityPlayer(p)), packet);
 		} catch (IllegalArgumentException | SecurityException | ReflectiveOperationException e) {
@@ -57,7 +57,7 @@ public class Titles {
 	
 	public static void sendActionBar(Player p, String msg) {
 		try {
-			Object cbc = Objects.requireNonNull(chatserializerClass).getMethod("a", String.class).invoke(chatserializerClass, createJsonObject(msg));
+			Object cbc = Objects.requireNotNull(chatserializerClass).getMethod("a", String.class).invoke(chatserializerClass, createJsonObject(msg));
 			Object packet = packetplayoutchatClass.getConstructor(ichatbasecomponentClass, byte.class).newInstance(cbc, (byte) 2);
 			// Send Packet
 			playerconnectionClass.getMethod(SENDPACKET, packetClass).invoke(Reflections.getValue(playerconnectionField, Players.getEntityPlayer(p)), packet);

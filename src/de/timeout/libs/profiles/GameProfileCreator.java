@@ -184,7 +184,7 @@ public class GameProfileCreator implements Future<GameProfile> {
 		
 		private final String name;
 		
-		private Model(String name) {
+		Model(String name) {
 			this.name = name;
 		}
 		

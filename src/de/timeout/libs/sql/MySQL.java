@@ -174,9 +174,13 @@ public class MySQL {
 				statement.close();
 				// apply function
 				if(query != null) query.accept(rs);
+
+				// reduce data-leaks
+				connection.commit();
 			} catch(SQLException e) {
 				Logger.getGlobal().log(Level.WARNING, "Unable to execute SQL-Statement", e);
 			}
+
 		}, executor);
 	}
 	

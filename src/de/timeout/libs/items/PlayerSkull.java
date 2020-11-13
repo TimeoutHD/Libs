@@ -40,8 +40,8 @@ public class PlayerSkull extends ItemStack {
 	private static final Class<?> craftmetaskullClass = BukkitReflections.getCraftBukkitClass("inventory.CraftMetaSkull");
 	private static final Class<?> craftskullClass = BukkitReflections.getCraftBukkitClass("block.CraftSkull");
 	
-	private static final @NotNull Field metaProfileField = Objects.requireNonNull(Reflections.getField(craftmetaskullClass, "profile"));
-	private static final @NotNull Field skullProfileField = Objects.requireNonNull(Reflections.getField(craftskullClass, "profile"));
+	private static final @NotNull Field metaProfileField = Objects.requireNotNull(Reflections.getField(craftmetaskullClass, "profile"));
+	private static final @NotNull Field skullProfileField = Objects.requireNotNull(Reflections.getField(craftskullClass, "profile"));
 	
 	private static final Base64 base64 = new Base64();
 	
@@ -79,7 +79,7 @@ public class PlayerSkull extends ItemStack {
 	@Override
 	public @NotNull ItemMeta getItemMeta() {
 		// It's always there, because the item is never null and no air
-		return Objects.requireNonNull(super.getItemMeta());
+		return Objects.requireNotNull(super.getItemMeta());
 	}
 
 	/**
@@ -105,7 +105,7 @@ public class PlayerSkull extends ItemStack {
         profile.getProperties().put("textures", new Property("textures", new String(encodedData)));
         // create ItemStack and get ItemMeta
         ItemStack skull = new ItemStackBuilder(STEVE).toItemStack();
-        ItemMeta meta = Objects.requireNonNull(skull.getItemMeta());
+        ItemMeta meta = Objects.requireNotNull(skull.getItemMeta());
         // write Profile in ItemMeta
 		Reflections.setField(metaProfileField, meta, profile);
 		// set meta in skull
@@ -140,7 +140,7 @@ public class PlayerSkull extends ItemStack {
 	 * @return the block itself
 	 */
 	public Block toBlock(@NotNull Location location) {
-		return this.toBlock(Objects.requireNonNull(location.getWorld()), location.getBlockX(), location.getBlockY(), location.getBlockZ());
+		return this.toBlock(Objects.requireNotNull(location.getWorld()), location.getBlockX(), location.getBlockY(), location.getBlockZ());
 	}
 	
 	/**

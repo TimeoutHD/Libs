@@ -166,7 +166,7 @@ public class ItemStackBuilder {
 		// Validate
 		Validate.notEmpty(lines, "new Lines cannot be empty or null");
 		// create new lore
-		List<String> newLore = new ArrayList<>(Objects.requireNonNull(getSafeItemMeta(currentBuilding).getLore()));
+		List<String> newLore = new ArrayList<>(Objects.requireNotNull(getSafeItemMeta(currentBuilding).getLore()));
 		// add elements to lore
 		newLore.addAll(Arrays.asList(lines));
 		// execute setlore and return this to continue
@@ -268,7 +268,7 @@ public class ItemStackBuilder {
 	protected static @NotNull ItemMeta getSafeItemMeta(ItemStack item) {
 		// an itemmeta is only null when the item is air or null
 		if(item != null && item.getType() == Material.AIR) {
-			return Objects.requireNonNull(item.getItemMeta());
+			return Objects.requireNotNull(item.getItemMeta());
 		}
 
 		// Throws a new IllegalArgumentException if the ItemMeta is null

@@ -11,7 +11,6 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.ClassUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.reflect.FieldUtils;
-import org.apache.commons.lang.reflect.MethodUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -160,7 +159,7 @@ public class Reflections {
 			FieldUtils.writeField(field, obj, value, true);
 		} catch (IllegalAccessException e) {
 			Logger.getGlobal().log(Level.WARNING, String.format("Unable to write Value %s in Field %s of class %s"
-					, value.toString(), field.getName(), obj.getClass().getName()));
+					, value != null ? value.toString() : "", field.getName(), obj.getClass().getName()));
 		}
 	}
 	

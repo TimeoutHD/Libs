@@ -1,6 +1,6 @@
 package de.timeout.libs.gui.event;
 
-import javax.annotation.Nonnull;
+import javax.annotation.NotNull;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.event.HandlerList;
@@ -19,7 +19,7 @@ public class GUIInteractEvent extends InventoryClickEvent {
 	
 	private GUI gui;
 	
-	public GUIInteractEvent(@Nonnull InventoryClickEvent event, @Nonnull GUI gui) {
+	public GUIInteractEvent(@NotNull InventoryClickEvent event, @NotNull GUI gui) {
 		super(event.getView(), event.getSlotType(), event.getSlot(), event.getClick(), event.getAction());
 		// Validate
 		Validate.notNull(gui, "GUI cannot be null");
@@ -39,7 +39,7 @@ public class GUIInteractEvent extends InventoryClickEvent {
 	 * Returns the clicked gui
 	 * @return the clicked gui
 	 */
-	@Nonnull
+	@NotNull
 	public GUI getGUI() {
 		return gui;
 	}

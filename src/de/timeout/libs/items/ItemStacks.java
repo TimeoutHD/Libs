@@ -10,9 +10,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.WordUtils;
 import org.bukkit.Bukkit;
@@ -27,7 +26,7 @@ import com.google.gson.internal.bind.JsonTreeReader;
 
 import de.timeout.libs.BukkitReflections;
 import de.timeout.libs.Reflections;
-import org.jetbrains.annotations.NotNull;
+
 
 /**
  * Utilities for ItemStacks
@@ -106,7 +105,7 @@ public final class ItemStacks {
 	 * @param item the itemstack you want to encode
 	 * @return the json object of the itemstack. Cannot be null
 	 */
-	@Nonnull
+	@NotNull
 	public static JsonObject encodeJson(ItemStack item) {
 		return new JsonParser().parse(GSON.toJson(item.serialize())).getAsJsonObject();
 	}
@@ -116,12 +115,12 @@ public final class ItemStacks {
 	 * @param data the json data of the ItemStack
 	 * @return the ItemStack
 	 */
-	@Nonnull
+	@NotNull
 	public static ItemStack decodeJson(JsonObject data) {
 		return ItemStack.deserialize(GSON.fromJson(new JsonTreeReader(data), Map.class));
 	}
 	
-	@Nonnull
+	@NotNull
 	public static String getCustomizedName(ItemStack itemStack) {
 		// return displayname if item has one
 		if(itemStack.hasItemMeta() && Objects.requireNonNull(itemStack.getItemMeta()).hasDisplayName())

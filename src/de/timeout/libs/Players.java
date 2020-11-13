@@ -9,7 +9,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.Validate;
-import org.apache.commons.lang.reflect.FieldUtils;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -88,7 +87,6 @@ public final class Players {
 	 * @param player the Player
 	 * @param packet the packet
 	 */
-	@NotNull
 	public static void sendPacket(@NotNull Player player, @NotNull Object packet) {
 		// Validate
 		Validate.notNull(player, "Player cannot be null");

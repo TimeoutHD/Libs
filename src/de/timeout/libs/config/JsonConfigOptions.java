@@ -1,6 +1,6 @@
 package de.timeout.libs.config;
 
-import javax.annotation.Nonnull;
+import javax.annotation.NotNull;
 
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.FileConfigurationOptions;
@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class JsonConfigOptions extends FileConfigurationOptions {
 
-	protected JsonConfigOptions(@Nonnull MemoryConfiguration configuration) {
+	protected JsonConfigOptions(@NotNull MemoryConfiguration configuration) {
 		super(configuration);
 	}
 

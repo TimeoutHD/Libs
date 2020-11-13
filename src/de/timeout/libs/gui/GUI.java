@@ -37,8 +37,8 @@ public class GUI {
 	private static final @NotNull Class<?> ichatbasecomponentClass = BukkitReflections.getNMSClass("IChatBaseComponent");
 	private static final @NotNull Class<?> packetplayoutopenwindowClass = BukkitReflections.getNMSClass("PacketPlayOutOpenWindow");
 	
-	private static final @NotNull Field titleField = Objects.requireNonNull(Reflections.getField(containerClass, "title"));
-	private static final @NotNull Field windowidField = Objects.requireNonNull(Reflections.getField(containerClass, "windowId"));
+	private static final @NotNull Field titleField = Objects.requireNotNull(Reflections.getField(containerClass, "title"));
+	private static final @NotNull Field windowidField = Objects.requireNotNull(Reflections.getField(containerClass, "windowId"));
 	
 	protected final List<InventoryView> viewers = new ArrayList<>();
 	protected final List<GUIInteractable<?>> interactors;
