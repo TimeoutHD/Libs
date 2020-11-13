@@ -3,12 +3,12 @@ package de.timeout.libs.vector;
 
 public class Level {
 
-	private Vector supportVector;
-	private Vector normalVector;
+	private final Vector supportVector;
+	private final Vector normalVector;
 	
 	public Level(Vector supportVector, Vector v, Vector u) {
 		this.supportVector = supportVector;
-		this.normalVector = v.clone().crossProduct(u).normalize();
+		this.normalVector = new Vector(v.clone().crossProduct(u).normalize());
 	}
 	
 	public Level(Vector supportVector, Vector normalVector) {

@@ -6,8 +6,6 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.bukkit.Bukkit;
-
 /**
  * Extends the normal Bukkit Logger to write Colors
  * @author Timeout
@@ -15,7 +13,7 @@ import org.bukkit.Bukkit;
  */
 public class ColoredLogger {
 
-	private static final Logger LOGGER = Bukkit.getLogger();
+	private static final Logger LOGGER = Logger.getGlobal();
 	private static final String COLOR_PATTERN = "\u001b[38;5;%dm";
 	private static final String FORMAT_PATTERN = "\u001b[%dm";
 	
@@ -95,7 +93,7 @@ public class ColoredLogger {
 	 * @param e the exception 
 	 */
 	public void log(Level level, String message, Throwable e) {
-		LOGGER.log(level, prefix + convertStringMessage(message, colorFormatter), e);
+		LOGGER.log(level, e, () -> prefix + convertStringMessage(message, colorFormatter));
 	}
 	
 	/**
@@ -104,7 +102,7 @@ public class ColoredLogger {
 	 * @author Timeout
 	 * 
 	 * @param level the level of the log
-	 * @param message the message you want to show
+	 * @param msgSupplier the message you want to show
 	 */
 	public void log(Level level, Supplier<String> msgSupplier) {
 		LOGGER.log(level, () -> prefix + convertStringMessage(msgSupplier.get(), colorFormatter));
@@ -172,8 +170,8 @@ public class ColoredLogger {
 		RESET('r', FORMAT_PATTERN, 0);
 		
 		
-		private char bukkitColor;
-		private String ansiColor;
+		private final char bukkitColor;
+		private final String ansiColor;
 		
 		private ConsoleColor(char bukkitColor, String pattern, int ansiCode) {
 			this.bukkitColor = bukkitColor;

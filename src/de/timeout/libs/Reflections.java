@@ -1,46 +1,76 @@
 package de.timeout.libs;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.ClassUtils;
+import org.apache.commons.lang.Validate;
+import org.apache.commons.lang.reflect.FieldUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import com.mojang.authlib.GameProfile;
-
-public final class Reflections {
-		
-	private static final Field modifiers = getField(Field.class, "modifiers");
+public class Reflections {
+			
+	protected Reflections() {}
 	
-	private static final Class<?> packetClass = getNMSClass("Packet");
-	
-	private Reflections() {}
-	
+	/**
+	 * Searches through a bundle of field until it founds the correct field
+	 * @param clazz the class you want to search
+	 * @param names a bundle of names. NMS-Fieldnames may changes in different versions
+	 * @return the searched field or null if the field cannot be found.
+	 */
+	@Nullable
 	public static Field getField(Class<?> clazz, String... names) {
 		// if names is not empty
 		if(names.length != 0) {
-			try {
-				// get Field and set executable
-				Field field = clazz.getDeclaredField(names[0]);
-				field.setAccessible(true);
-				
-				// change modifier fields
-				if(Modifier.isFinal(field.getModifiers())) modifiers.set(field, field.getModifiers() & ~Modifier.FINAL);
-				// return field
+			// get Field and set executable
+			Field field = FieldUtils.getField(clazz, names[0], true);
+
+			// check if field was found
+			if(field != null) {
+				// return found field
 				return field;
-			} catch (NoSuchFieldException e) {
+			} else {
 				// Field not found recursive execute without first element
-				return getField(clazz, ArrayUtils.subarray(names, 1, names.length));
-			} catch(IllegalArgumentException | SecurityException | IllegalAccessException e) {
-				Bukkit.getLogger().log(Level.SEVERE, "Cannot get checked fields " + Arrays.toString(names) + " in Class " + clazz.getName(), e);
+				return getField(clazz, (String[]) ArrayUtils.subarray(names, 1, names.length));
 			}
-			return null;
 		} else return null;
+	}
+	
+	/**
+	 * Searches for a field which has different names in different versions. 
+	 * @param clazz the class which stores this field. Cannot be null
+	 * @param fieldType the type of data of the field. Cannot be null
+	 * @param names the different names of the field
+	 * @return the field or null if the field could not be found
+	 */
+	@Nullable
+	public static Field getField(@NotNull Class<?> clazz, @NotNull Class<?> fieldType, String... names) {
+		// Validate
+		Validate.notNull(clazz, "Class cannot be null");
+		Validate.notNull(fieldType, "FieldType cannot be null");
+		
+		// return null if the names length is null
+		if(names.length > 0) {
+			// try to get first Field
+			Field field = getField(clazz, fieldType, names[0]);
+			
+			// recursive search if field could not be found. Otherwise return field
+			return field == null ? getField(clazz, fieldType, (String[]) ArrayUtils.subarray(names, 1, names.length)) : field;
+		} else return null;
+	}
+	
+	@Nullable
+	private static Field getField(Class<?> clazz, Class<?> fieldType, String name) {
+		// try to get Field by name
+		Field field = FieldUtils.getField(clazz, name, true);
+
+		return field != null && field.getType().equals(fieldType) ? field : null;
 	}
 
 	/**
@@ -49,17 +79,9 @@ public final class Reflections {
 	 * @param name the fieldname
 	 * @return the field itself
 	 */
+	@NotNull
 	public static Field getField(Class<?> clazz, String name) {
-			try {
-				Field field = clazz.getDeclaredField(name);
-			    field.setAccessible(true);
-			      
-			    if (Modifier.isFinal(field.getModifiers()))modifiers.set(field, field.getModifiers() & ~Modifier.FINAL);
-			    return field;
-			} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-				Bukkit.getLogger().log(Level.SEVERE, "Cannot get Field " + name + " in Class " + clazz.getName(), e);
-			}
-		return null;
+		return FieldUtils.getField(clazz, name, true);
 	}
 	
 	/**
@@ -68,6 +90,7 @@ public final class Reflections {
 	 * @param name the name of the field
 	 * @return the field itself
 	 */
+	@NotNull
 	public static Field getField(Object obj, String name) {
 		return getField(obj.getClass(), name);
 	}
@@ -78,13 +101,14 @@ public final class Reflections {
 	 * @param obj the object you want to read
 	 * @return the value, which you are looking for. null if there were an error
 	 */
+	@Nullable
 	public static Object getValue(Field field, Object obj) {
 		try {
-			field.setAccessible(true);
-			return field.get(obj);
-		} catch (IllegalArgumentException | IllegalAccessException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Could not get Value from Field " + field.getName() + " in " + obj, e);
+			return FieldUtils.readField(field, obj, true);
+		} catch (IllegalAccessException e) {
+			Logger.getGlobal().log(Level.SEVERE, String.format("Could not get value from field %s in %s", field.getName(), obj.getClass().getSimpleName()), e);
 		}
+
 		return null;
 	}
 	
@@ -94,28 +118,15 @@ public final class Reflections {
 	 * @param classname the name of the class you are searching for
 	 * @return the class you are searching for. Null if the class does not exist
 	 */
-	public static Class<?> getSubClass(Class<?> overclass, String classname) {
-		Class<?>[] underclasses = overclass.getClasses();
-		for(Class<?> underclass : underclasses) {
-			if(underclass.getName().equalsIgnoreCase(overclass.getName() + "$" + classname))return underclass;
-		}
-		return null;
-	}
-	
-	/**
-	 * This method return an NMS-Class, which has a certain name
-	 * @param nmsClass the name of the NMS-Class
-	 * @return the CLass itself. Null if the class cannot be found.
-	 */
-	public static Class<?> getNMSClass(String nmsClass) {
-		try {
-			String version = Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".";
-			String name = "net.minecraft.server." + version + nmsClass;
-			return Class.forName(name);
-		} catch (ClassNotFoundException e) {
-			Bukkit.getLogger().log(Level.WARNING, "Could not find NMS-Class " + nmsClass, e);
-		}
-		return null;
+	@Nullable
+	public static Class<?> getSubClass(@NotNull Class<?> overclass, @NotNull String classname) {
+		Validate.notNull(overclass, "OverClass cannot be null");
+		Validate.notEmpty(classname, "Name of SubClass can neither be null nor empty!");
+		
+		return Arrays.stream(overclass.getClasses())
+			.filter(underclass -> underclass.getName().equalsIgnoreCase(overclass.getName() + "$" + classname))
+			.findAny()
+			.orElse(null);
 	}
 	
 	/**
@@ -123,63 +134,14 @@ public final class Reflections {
 	 * @param classpath the name of the class
 	 * @return the class itself
 	 */
+	@Nullable
 	public static Class<?> getClass(String classpath) {
 		try {
-			return Class.forName(classpath);
+			return ClassUtils.getClass(classpath);
 		} catch (ClassNotFoundException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Class " + classpath + " not found", e);
+			Logger.getGlobal().log(Level.SEVERE, e, () -> "Class " + classpath + " not found");
 		}
 		return null;
-	}
-	
-	/**
-	 * This method returns a CraftBukkit-Class 
-	 * @param clazz the Craftbukkit-Class
-	 * @return the CraftBukkit-Class. Null if the class cannot be found
-	 */
-	public static Class<?> getCraftBukkitClass(String clazz) {
-		try {
-			String version = Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".";
-			String name = "org.bukkit.craftbukkit." + version + clazz;
-			return Class.forName(name);
-		} catch (ClassNotFoundException e) {
-			Bukkit.getLogger().log(Level.WARNING, "Could not find CraftBukkit-Class " + clazz, e);
-		}
-		return null;
-	}
-	
-	/**
-	 * This method returns an EntityPlayer-Object of a player
-	 * @param player the player
-	 * @return the EntityPlayer as Object
-	 * @throws ReflectiveOperationException if there was an error
-	 */
-	public static Object getEntityPlayer(Player player) throws ReflectiveOperationException {
-		Method getHandle = player.getClass().getMethod("getHandle");
-		return getHandle.invoke(player);
-	}
-	
-	/**
-	 * This method returns the PlayerConnection as an Object
-	 * @param player the owner of the player connection
-	 * @return the PlayerConnection as Object
-	 * @throws ReflectiveOperationException if there was an error
-	 */
-	public static Object getPlayerConnection(Player player) throws ReflectiveOperationException {
-		Object nmsp = getEntityPlayer(player);
-		Field con = nmsp.getClass().getField("playerConnection");
-		return con.get(nmsp);
-	}
-	
-	/**
-	 * This method sends a Packet to a Player
-	 * @param player the Player
-	 * @param packet the packet
-	 * @throws ReflectiveOperationException if the object is not a packet
-	 */
-	public static void sendPacket(Player player, Object packet) throws ReflectiveOperationException {
-		Object playerConnection = getPlayerConnection(player);
-		playerConnection.getClass().getMethod("sendPacket", packetClass).invoke(playerConnection, packet);
 	}
 	
 	/**
@@ -188,30 +150,29 @@ public final class Reflections {
 	 * @param obj the Object you want to modifiy
 	 * @param value the new value of the field
 	 */
-	public static void setField(Field field, Object obj, Object value) {
+	public static void setValue(@NotNull Field field, @NotNull Object obj, @Nullable Object value) {
+		// Validate
+		Validate.notNull(field, "Field cannot be null");
+		Validate.notNull(obj, "Target cannot be null");
+
 		try {
-			field.setAccessible(true);
-			field.set(obj, value);
-			field.setAccessible(false);
-		} catch (IllegalArgumentException | IllegalAccessException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Could not set Value " + value.getClass().getName() + " in Field " + field.getName() + " in Class " + obj.getClass().getName(), e);
+			FieldUtils.writeField(field, obj, value, true);
+		} catch (IllegalAccessException e) {
+			Logger.getGlobal().log(Level.WARNING, String.format("Unable to write Value %s in Field %s of class %s"
+					, value != null ? value.toString() : "", field.getName(), obj.getClass().getName()));
 		}
 	}
 	
 	/**
-	 * This Method returns the player's GameProfile
-	 * @param player the owner of the GameProfile
-	 * @return the Gameprofile
+	 * This Method set a value into a Field in an Object
+	 * @param field the field 
+	 * @param target the targeted object
+	 * @param value the new value of the field
+	 * @deprecated Use {@link Reflections#setValue(Field, Object, Object)} instead.
 	 */
-	public static GameProfile getGameProfile(Player player) {
-		 try {
-			Class<?> craftplayerClass = getCraftBukkitClass("entity.CraftPlayer");
-			return craftplayerClass != null ? (GameProfile) craftplayerClass.getMethod("getProfile").invoke(player) : null;
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-				| SecurityException e) {
-			Bukkit.getLogger().log(Level.INFO, "Could not get GameProfile from Player " + player.getName(), e);
-		}
-		 return new GameProfile(player.getUniqueId(), player.getName());
+	@Deprecated
+	public static void setField(@NotNull Field field, @NotNull Object target, @Nullable Object value) {
+		setValue(field, target, value);
 	}
 	
 	/**
@@ -236,8 +197,33 @@ public final class Reflections {
 	 * @param fieldName the name of the Field
 	 * @param value the Value you want to insert at this Field
 	 */
-	public static void setValue(Object object, String fieldName, Object value) {
-		Field field = getField(object, fieldName);
-		Reflections.setField(field, object, value);
+	public static void setValue(@NotNull Object object, @NotNull String fieldName, @Nullable Object value) {
+		setValue(Objects.requireNonNull(getField(object, fieldName)), object, value);
+	}
+	
+	/**
+	 * Returns the method of a certain object due reflections
+	 * @param clazz the class which has the method. Cannot be null
+	 * @param name the name of the method. Can neither be null nor empty
+	 * @param params the parameters of the method
+	 * @return the method or null if the method could not be found
+	 */
+	@Nullable
+	public static Method getMethod(@NotNull Class<?> clazz, @NotNull String name, Class<?>... params) {
+		// Validate
+		Validate.notNull(clazz, "Class cannot be null");
+		Validate.notEmpty(name, "Method-Name can neither be null nor empty!");
+		
+		try {
+			return clazz.getMethod(name, params);
+		} catch (NoSuchMethodException e) {
+			Logger.getGlobal().log(Level.SEVERE, String.format("Unable to find Method with name %s(%s) in %s!", name, 
+					Arrays.toString(Arrays.stream(params).map(Class::getName).toArray()), clazz), e);
+		} catch (SecurityException e) {
+			Logger.getGlobal().log(Level.SEVERE, String.format("Internal SecurityException while searching method %s(%s) in class %s", name, 
+					Arrays.toString(Arrays.stream(params).map(Class::getName).toArray()), clazz), e);
+		}
+		
+		return null;
 	}
 }

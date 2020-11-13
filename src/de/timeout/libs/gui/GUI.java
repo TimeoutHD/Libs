@@ -1,177 +1,117 @@
 package de.timeout.libs.gui;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 import java.util.function.Consumer;
-
-import javax.annotation.Nonnegative;
-import javax.annotation.Nonnull;
+import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
-import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
-import org.bukkit.event.Event.Result;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.java.JavaPlugin;
 
-import de.timeout.libs.items.ItemStackAPI;
+import de.timeout.libs.BukkitReflections;
+import de.timeout.libs.Players;
+import de.timeout.libs.Reflections;
+import de.timeout.libs.gui.event.ButtonClickEvent;
+import de.timeout.libs.gui.event.GUICloseEvent;
+import de.timeout.libs.gui.event.GUIOpenEvent;
+import de.timeout.libs.items.ItemStackBuilder;
 import net.md_5.bungee.api.ChatColor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * This class represents a gui for user interactions with a plugin
- * @author Timeout
- *
- */
 public class GUI {
-
-	private static GUIHandler handler;
-	
-	protected ItemStack n;
-	
-	protected UUID uniqueID;
-	protected Inventory design;
-	protected Consumer<GUICloseEvent> closeFunction;
-	
-	// it is not possible to storage more than NMS-Tags in ItemStacks...
-	protected List<Consumer<ButtonClickEvent>> functions;
-	
-	/**
-	 * This constructor creates a new GUI without a design
-	 * @param main the mainclass of the plugin
-	 */
-	public GUI() {
-		// initialize final fields
-		uniqueID = UUID.randomUUID();
 		
-		// initialize handlers if handler does not exist
-		if(handler == null) handler = new GUIHandler((JavaPlugin) Bukkit.getPluginManager().getPlugins()[0]);
-	}
+	private static final GUIHandler handler = new GUIHandler();
+
+	private static final @NotNull  Class<?> craftinventoryviewClass = BukkitReflections.getCraftBukkitClass("inventory.CraftInventoryView");
+	private static final @NotNull Class<?> chatmessageClass = BukkitReflections.getNMSClass("ChatMessage");
+	private static final @NotNull Class<?> containerClass = BukkitReflections.getNMSClass("Container");
+	private static final @NotNull Class<?> containersClass = BukkitReflections.getNMSClass("Containers");
+	private static final @NotNull Class<?> ichatbasecomponentClass = BukkitReflections.getNMSClass("IChatBaseComponent");
+	private static final @NotNull Class<?> packetplayoutopenwindowClass = BukkitReflections.getNMSClass("PacketPlayOutOpenWindow");
+	
+	private static final @NotNull Field titleField = Objects.requireNotNull(Reflections.getField(containerClass, "title"));
+	private static final @NotNull Field windowidField = Objects.requireNotNull(Reflections.getField(containerClass, "windowId"));
+	
+	protected final List<InventoryView> viewers = new ArrayList<>();
+	protected final List<GUIInteractable<?>> interactors;
+	
+	protected UUID uuid;
+	protected Material background;
+	protected ItemStack[] design;
+	protected Consumer<GUICloseEvent> closeAction;
 	
 	/**
 	 * This constructor creates a new gui with a certain design. Note that every itemstack is not a button.
 	 * You must initialize your buttons first with the Method 
-	 * @param design
+	 * @param design the inventory design
 	 */
-	public GUI(Inventory design) {
-		this(null, design, (short) 7);
+	public GUI(@NotNull Inventory design) {
+		this(design, Material.GRAY_STAINED_GLASS_PANE);
 	}
 	
-	public GUI(String name, Inventory design) {
-		this(name, design, (short) 7);
+	public GUI(@NotNull Inventory design, Material background) {
+		this(design, background, null);
 	}
+
 	
-	public GUI(Inventory design, @Nonnegative short nColor) {
-		this(design.getName(), design, nColor);
-	}
-	
-	public GUI(String name, Inventory design, @Nonnegative short nColor) {
-		this(name, design, nColor, null);
-	}
-	
-	public GUI(String name, Inventory design, @Nonnegative short nColor, Consumer<GUICloseEvent> event) {
-		this();
+	public GUI(@NotNull Inventory design, Material background, Consumer<GUICloseEvent> event) {
 		// Validate
 		Validate.notNull(design, "Inventory-Design cannot be null");
-		// reinitialize n
-		this.n = ItemStackAPI.createItemStack(Material.STAINED_GLASS_PANE, 1, nColor, ChatColor.translateAlternateColorCodes('&', "&7"));
+		
 		// initialize design and slot for Buttons
-		this.design = Bukkit.createInventory(null, design.getSize(), name != null ? name : design.getTitle());
-		functions = new ArrayList<>(design.getSize());
-		this.closeFunction = event;
+		this.background = Optional.ofNullable(background).orElse(Material.GRAY_STAINED_GLASS_PANE);
+		this.design = new ItemStack[design.getSize()];
+		this.interactors = new ArrayList<>(design.getSize());
+		
 		// apply design
-		for(int i = 0; i < this.design.getSize(); i++) {
-			// add placeholder for function
-			functions.add(null);
-			// get ItemStack
-			ItemStack item = design.getItem(i);
-			// set to n if item is null.
-			this.design.setItem(i, item != null ? item : n);
-		}
-	}
-	
-	/**
-	 * This constructor generates a clone of a certain gui
-	 * @param base the original gui 
-	 */
-	public GUI(GUI base) {
-		this(base.design.getName(), base.design, base.n.getDurability(), base.closeFunction);
-	}
-	
-	/**
-	 * This method returns the uniqueID of this GUI
-	 * @return
-	 */
-	public UUID getUniqueID() {
-		return uniqueID;
-	}
-	
-	/**
-	 * This method returns the title of the GUI
-	 * @return the title
-	 */
-	public String getName() {
-		return design.getName();
-	}
-	
-	/**
-	 * This method returns the design of the gui
-	 * @return
-	 */
-	public Inventory getDesign() {
-		return design;
-	}
-	
-	/**
-	 * This method sets the close function of the gui. null deletes the close function
-	 * @param event the new closefunction or null
-	 */
-	public void setCloseFunction(Consumer<GUICloseEvent> event) {
-		this.closeFunction = event;
-	}
-	
-	/**
-	 * This method returns an array with all buttons. The index is the correct position of this button. 
-	 * If there is no button the element will be null
-	 * @return an array of the size of the gui which contains all buttons in the right index or null if there is no button in that index
-	 */
-	public Button[] getButtons() {
-		// create new array
-		Button[] buttons = new Button[design.getSize()];
-		// for each itemstack in inventory
 		for(int i = 0; i < design.getSize(); i++) {
-			// get ItemStack
-			ItemStack item = design.getItem(i);
-			// get Consumer
-			Consumer<ButtonClickEvent> click = functions.get(i);
-			// add to cache if item is a button, else add null
-			buttons[i] = click != null ? new Button(item, click) : null;
+			setItem(i, design.getItem(i));
 		}
-		// return buttons
-		return buttons;
+
+		closeAction = event;
 	}
 	
 	/**
-	 * This method validates the slot
-	 * @param slot the slot
+	 * Sets an item into the gui. Works also with Buttons and Levers
+	 * @param slot the slot of the item
+	 * @param item the item or button itself
 	 */
-	private void validateSlot(@Nonnegative int slot) {
-		// throw new exception when Slot is invalid
-		if(slot < 0 || slot >= this.design.getSize()) throw new IllegalArgumentException("slot must be in range of the gui slots");
+	public void setItem(int slot, ItemStack item) {
+		// check if slot is valid
+		if(slot >= 0 && slot < design.length) {
+			// insert background if item is null
+			if(item != null) {
+				// add interact function if exists. Else delete old one
+				if(item instanceof GUIInteractable) {
+					// add function 
+					this.interactors.set(slot, (GUIInteractable<?>) item);
+				} else this.interactors.set(slot, null);
+				
+				// add item
+				this.design[slot] = item;
+			} else this.design[slot] = new ItemStackBuilder().setType(background).setDisplayName(ChatColor.translateAlternateColorCodes('&', "&7")).toItemStack();
+		} else throw new IndexOutOfBoundsException(String.format("Slot index out of range: %d", slot));
+	}
+	
+	/**
+	 * Returns the itemstack of a certain position
+	 * @param slot the position itself
+	 * @return the itemstack on that position
+	 */
+	public ItemStack getItem(int slot) {
+		// check if slot is valid
+		if(slot >= 0 && slot < design.length) {
+			// returns the itemstack itself
+			return design[slot].clone();
+		} else throw new IndexOutOfBoundsException(String.format("Slot index out of range: %d", slot));
 	}
 	
 	/**
@@ -186,14 +126,12 @@ public class GUI {
 	 *     TODO: What happen when a player click the button
 	 * });
 	 * </code>
+	 * 
+	 * @deprecated Use GUI#setItem(slot, button) instead 
 	 */
-	public void registerButton(@Nonnegative int slot, Consumer<ButtonClickEvent> click) {
-		// Validate
-		validateSlot(slot);
-		// set new button
-		this.design.setItem(slot, new Button(this.design.getItem(slot), click));
-		// cache click in storage
-		functions.set(slot, click);
+	@Deprecated
+	public void registerButton(int slot, Consumer<ButtonClickEvent> click) {
+		setItem(slot, new Button(getItem(slot), click));
 	}
 	
 	/**
@@ -201,7 +139,7 @@ public class GUI {
 	 * The ItemStack represents the design of the button.
 	 * 
 	 * @param slot the slot where the button should be
-	 * @param item the ItemStack-Design of the Button
+	 * @param design the ItemStack-Design of the Button
 	 * @param click what happens when a player clicks the button
 	 * @throws IllegalArgumentException if the design is null or the slot is out of range
 	 * 
@@ -211,15 +149,12 @@ public class GUI {
 	 *     TODO: What happens if the button is clicked
 	 * });
 	 * </code>
+	 * 
+	 * @deprecated Use GUI#setItem(slot, button) instead 
 	 */
-	public void registerButton(@Nonnegative int slot, ItemStack design, Consumer<ButtonClickEvent> click) {
-		// Validate
-		Validate.notNull(design, "The design of the button cannot be null");
-		validateSlot(slot);
-		// set new button
-		this.design.setItem(slot, new Button(design, click));
-		// cache click in storage
-		functions.set(slot, click);
+	@Deprecated
+	public void registerButton(int slot, ItemStack design, Consumer<ButtonClickEvent> click) {
+		setItem(slot, new Button(design, click));
 	}
 	
 	/**
@@ -227,465 +162,182 @@ public class GUI {
 	 * @param slot the slot where the button should be
 	 * @param button the button itself
 	 * @throws IllegalArgumentException if the button is null or the slot is out of range
+	 * 
+	 * @deprecated Use GUI#setItem(slot, button) instead 
 	 */
-	public void registerButton(@Nonnegative int slot, Button button) {
-		// Validate
-		Validate.notNull(button, "Button cannot be null");
-		validateSlot(slot);
+	@Deprecated
+	public void registerButton(int slot, Button button) {
 		// call method
 		this.registerButton(slot, button.clone(), button.getClickFunction());
-	}
-	
-	public void removeButton(int slot) {
-		// validate
-		validateSlot(slot);
-		// remove item
-		design.setItem(slot, n);
-		// remove function
-		functions.remove(slot);
-		// update gui
-		updateGUI();
-	}
-	
-	/**
-	 * This method returns a clonelist of all viewers of this gui
-	 * @return a list of all viewers
-	 */
-	public List<HumanEntity> getViewers() {
-		return new ArrayList<>(this.design.getViewers());
-	}
-	
-	public void destroy() {
-		// close can only perform in a synchronized Scheduler. See DOC: InventoryClickEvent!
-		Bukkit.getScheduler().runTask(Bukkit.getPluginManager().getPlugins()[0], () -> {
-			// close Inventory for every viewer
-			getViewers().forEach(HumanEntity::closeInventory);
-			// delete inventory
-			design = null;
-			n = null;
-			uniqueID = null;
-			functions = null;
-		});
-
 	}
 	
 	/**
 	 * This method updates the gui for every player
 	 */
 	public void updateGUI() {
-		handler.updateGUI(uniqueID);
+		viewers.forEach(viewer -> this.openGUI(viewer.getPlayer(), viewer.getTitle()));
 	}
 	
 	/**
 	 * This method opens this gui for a player
-	 * @param player the okayer who wants to open this gui
+	 * @param player the player who wants to open this gui
 	 * @throws IllegalArgumentException if the player is null
 	 */
-	public void openGUI(HumanEntity player) {
-		handler.openGUI(player, this);
-	}
-	
-	/**
-	 * This method checks if there is a Button on a certain slot
-	 * @param slot the slot wou want to check
-	 * @return if there is a button or not
-	 */
-	public boolean isButton(int slot) {
-		return functions.get(slot) != null;
-	}
-	
-	/**
-	 * This method returns a button on a certain slot. If the Button does not exist it will return null
-	 * @param slot the slot where you are looking at
-	 * @return the button if it exists or null if it doesn't exist
-	 */
-	public Button getButton(int slot) {
-		// get Function
-		Consumer<ButtonClickEvent> click = functions.get(slot);
-		// return button if exist. Else return null
-		return click != null ? new Button(design.getItem(slot), functions.get(slot)) : null;
-	}
-	
-	/**
-	 * This class handles every GUI for every player
-	 * @author Timeout
-	 *
-	 */
-	private static class GUIHandler implements Listener {
-		
-		private static final Map<HumanEntity, GUI> activeViewers = new ConcurrentHashMap<>();
-		
-		private JavaPlugin slaveMain;
-		
-		public GUIHandler(JavaPlugin main) {
-			// Validate
-			Validate.notNull(main, "Main Class cannot be null");
-			// link main
-			slaveMain = main;
-			// register Listener in first Plugin
-			Bukkit.getPluginManager().registerEvents(this, main);
+	public void openGUI(HumanEntity player, String name) {
+		// check if event is not cancelled
+		GUIOpenEvent event = handler.onGUIOpen(player, this, name);
+		if(!event.isCancelled()) {
+			// open inventory
+			InventoryView view = event.getPlayer().openInventory(createGUI(event.getName()));
+			
+			// if view is not null
+			if(view != null) {		
+				// add to viewers if all succeed 
+				this.viewers.add(view);
+			} else handler.onGUIOpenAbort(event.getPlayer());
 		}
+	}
+	
+	/**
+	 * This method returns the uniqueID of this GUI
+	 * @return the unique-id of the gui
+	 */
+	public UUID getUniqueID() {
+		return uuid;
+	}
+	
+	/**
+	 * This method returns the design of the gui
+	 * @return the design of the gui
+	 */
+	public Inventory getDesign() {
+		return createGUI(null);
+	}
+	
+	/**
+	 * Returns the title of the gui in view of the player
+	 * 
+	 * @param viewer the original viewer of the gui
+	 * @return the title you want to get. Returns null if the viewer does not have this gui open
+	 * @throws IllegalArgumentException if the viewer is null
+	 * 
+	 */
+	public String getTitle(@NotNull HumanEntity viewer) {
+		// Validate
+		Validate.notNull(viewer, "Viewer cannot be null");
+		
+		// check if player sees this gui
+		return viewers.contains(viewer.getOpenInventory()) ? viewer.getOpenInventory().getTitle() : null;
+	}
+	
+	/**
+	 * Creates a new gui of this type with a new name
+	 * @param name the name of the gui
+	 * @return the gui itself
+	 */
+	private Inventory createGUI(String name) {
+		// Create new inventory
+		Inventory inv = Bukkit.createInventory(null, design.length, Optional.ofNullable(name).orElse(""));
+		// add all designs to inv
+		for(int i = 0; i < design.length; i++) inv.setItem(i, getItem(i));
+		
+		return inv;
+	}
+	
+	/**
+	 * Returns the current gui view of the human entity
+	 * @param entity the entity's view you want to get
+	 * @return the view or null if the entity does not have this gui open
+	 */
+	@Nullable
+	public InventoryView getView(@NotNull HumanEntity entity) {
+		// Validate
+		Validate.notNull(entity, "Viewer cannot be null");
 
-		@EventHandler(priority = EventPriority.MONITOR)
-		public void onInventoryClick(InventoryClickEvent event) {
-			// get Clicked person
-			HumanEntity player = event.getWhoClicked();
-			// get GUI
-			GUI gui = activeViewers.get(event.getWhoClicked());
-			// validate
-			if(event.getClickedInventory() != null && event.getClickedInventory().equals(player.getOpenInventory().getTopInventory()) && 
-					event.getCurrentItem() != null && gui != null) {
-				// gui is clicked. Deny is better than cancel
-				event.setResult(Result.DENY);
-				// if item is button
-				if(gui.isButton(event.getSlot())) {
-					// get Button
-					Button button = gui.getButton(event.getSlot());
-					// call ButtonClickEvent
-					ButtonClickEvent buttonClickEvent = new ButtonClickEvent(event, gui, button);
-					Bukkit.getPluginManager().callEvent(buttonClickEvent);
-					// execute click when event is not cancelled
-					if(!buttonClickEvent.isCancelled())
-						buttonClickEvent.getButton().click(buttonClickEvent);
-				}
+		// search if entity contains the user
+		return viewers
+				.stream()
+				.filter(view -> view.getPlayer().equals(entity))
+				.findAny()
+				.orElse(null);
+		
+	}
+	
+	public void setTitle(@NotNull Player viewer, String title) {
+		// Validate
+		Validate.notNull(viewer, "Viewer cannot be null");
+		
+		// try to get inventoryview
+		InventoryView gui = getView(viewer);
+		
+		// only continues if viewer sees the inventory
+		if(gui != null) {
+			try {
+				// create IChatComponent for title
+				Object chatComponent = chatmessageClass.getConstructor(String.class).newInstance(title);
+			
+				// change name in NMS
+				changeNMSTitle(gui, chatComponent);
+				
+				// get ActiveContainer
+				Object activeContainer = Players.getActiveContainer(viewer);
+				// create update packet
+				Object packet = packetplayoutopenwindowClass
+						.getConstructor(int.class, containersClass, ichatbasecomponentClass)
+						.newInstance(((Integer) Reflections.getValue(windowidField, activeContainer)), getContainerType(), chatComponent);
+				
+				// send packet
+				Players.sendPacket(viewer, packet);
+				viewer.updateInventory();
+			} catch (InstantiationException e) {
+				Bukkit.getLogger().log(Level.SEVERE, "Unable to instantiate IChatBaseComponent", e);
+			} catch (IllegalAccessException e) {
+				Bukkit.getLogger().log(Level.WARNING, "Unable to receive access to constructor ChatMessage(String)", e);
+			} catch (InvocationTargetException e) {
+				Bukkit.getLogger().log(Level.WARNING, "Invalid target constructor ChatMessage(String)", e);
+			} catch (NoSuchMethodException e) {
+				Bukkit.getLogger().log(Level.WARNING, "Unable to get constructor ChatMessage(String)", e);
+			} catch (SecurityException e) {
+				Bukkit.getLogger().log(Level.WARNING, "SecurityException while updating title in InventoryView.", e);
+			} catch (ReflectiveOperationException e) {
+				Bukkit.getLogger().log(Level.WARNING, "Unable to send packet to player", e);
 			}
 		}
-		
-		@EventHandler(priority = EventPriority.MONITOR)
-		public void onInventoryClose(InventoryCloseEvent event) {
-			// get gui
-			GUI gui = activeViewers.remove(event.getPlayer());
-			// if player had an gui open
-			if(gui != null) {
-				// create and call close event
-				GUICloseEvent closeEvent = new GUICloseEvent(gui, event);
-				Bukkit.getPluginManager().callEvent(closeEvent);
-				// destroy gui when bool is true
-				if(closeEvent.isDestroyed()) gui.destroy();
-				// execute close function when function is not cancelled and function is not null
-				if(!closeEvent.isFunctionCancelled() && gui.closeFunction != null) gui.closeFunction.accept(closeEvent);
-			}
-		}
-		
-		@EventHandler(priority = EventPriority.MONITOR)
-		public void onItemDrop(PlayerDropItemEvent event) {
-			// cancel drop if player view on a gui
-			if(activeViewers.containsKey(event.getPlayer())) event.setCancelled(true);
-		}
-		
-		/**
-		 * This method updates a certain gui for all viewers
-		 * @param guid the unique id of the gui
-		 */
-		public void updateGUI(UUID guid) {
-			// validate
-			Validate.notNull(guid, "UniqueId cannot be null");
-			// reopen gui for every viewer.
-			activeViewers.entrySet().stream()
-				.filter(entry -> entry.getValue().getUniqueID().equals(guid))
-				.forEach(entry -> entry.getValue().openGUI(entry.getKey()));
-		}
-		
-		/**
-		 * This method opens a gui for a certain player
-		 * @param player the player which wants
-		 * @param gUI the gui which is going to open by the player
-		 * @throws IllegalArgumentException
-		 */
-		public void openGUI(HumanEntity player, GUI gUI) {
-			// validate
-			Validate.notNull(player, "Player cannot be null");
-			Validate.notNull(gUI, "GUi cannot be null");
-			// Inventories cannot be open in Main-Thread. See DOC: InventoryClickEvent!
-			Bukkit.getScheduler().runTask(slaveMain, () -> {
-				// open Inventory
-				player.openInventory(gUI.design);
-				// cache new result
-				activeViewers.put(player, gUI);
-			});
-		}
 	}
 	
 	/**
-	 * This class represents a Button which has a clear function
-	 * @author Timeout
-	 *
+	 * Method to change inventory title in NMS
+	 * @param view the view of the container
+	 * @param titleComponent the component you want to insert
 	 */
-	public static class Button extends ItemStack {
-	
-		protected Consumer<ButtonClickEvent> consumer;
-		
-		public Button(Consumer<ButtonClickEvent> click) {
-			super();
-			consumer = click;
-		}
-		
-		/**
-		 * This constructor creates an inheritageable instance of this class
-		 */
-		protected Button() {
-			super();
-			consumer = null;
-		}
-		
-		/**
-		 * This constructor creates a clone of a button
-		 * @param button the button you want to clone
-		 * @throws IllegalArgumentException if the Button is null
-		 */
-		public Button(@Nonnull Button button) {
-			this(button.clone(), button.consumer);
-		}
-		
-		/**
-		 * This constructor creates a new Button. The design is a copy of the itemstack
-		 * @param stack the design of this button
-		 * @param click what happens if the player clicks this Item
-		 */
-		public Button(ItemStack stack, Consumer<ButtonClickEvent> click) {
-			super(stack);
-			this.consumer = click;
-		}
-
-		/**
-		 * This constructor creates a new Button
-		 * @param type the Material of this Button
-		 * @param amount the amount of this Button
-		 * @param damage the subID of this Button
-		 * @param click what happens if the player clicks this button
-		 */
-		public Button(Material type, int amount, short damage, Consumer<ButtonClickEvent> click) {
-			super(type, amount, damage);
-			this.consumer = click;
-		}
-
-		/**
-		 * This constructor creates a new Button with the subID 0
-		 * @param type the Material of this Button
-		 * @param amount the amount of this Button
-		 * @param click what happens if the player clicks this button
-		 */
-		public Button(Material type, int amount, Consumer<ButtonClickEvent> click) {
-			this(type, amount, (short) 0, click);
-		}
-
-		/**
-		 * This constructor creates a new Button with the subID 0 and the amount 1
-		 * @param type the Material of this Button
-		 * @param click what happens if the player clicks this button
-		 */
-		public Button(Material type, Consumer<ButtonClickEvent> click) {
-			this(type, 1, click);
-		}
-
-		public void click(ButtonClickEvent event) {
-			consumer.accept(event);
-		}
-		
-		/**
-		 * This Method returns the click function of the button
-		 * @return the click function
-		 */
-		public Consumer<ButtonClickEvent> getClickFunction() {
-			return consumer;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (!super.equals(obj))
-				return false;
-			if (!(obj instanceof Button))
-				return false;
-			Button other = (Button) obj;
-			return Objects.equals(consumer, other.consumer);
+	private void changeNMSTitle(InventoryView view, Object titleComponent) {
+		try {
+			// get nms-container
+			Object container = craftinventoryviewClass.getMethod("getHandle").invoke(view);
+			
+			// insert chatcomponent into container
+			Reflections.setValue(titleField, container, titleComponent);
+		} catch (IllegalAccessException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Unable to access method CraftInventoryView#getHandle", e);
+		} catch (InvocationTargetException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Invalid target: CraftInventoryView#getHandle", e);
+		} catch (NoSuchMethodException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Method CraftInventoryView#getHandle does not exists", e);
+		} catch (SecurityException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Unhandled Security exception inside JVM. Cannot change title of gui", e);
 		}
 	}
 	
-	/**
-	 * This event will be triggered when a player clicks on a button
-	 * @author Timeout
-	 *
-	 */
-	public static class ButtonClickEvent extends Event implements Cancellable {
-		
-		private static final HandlerList handlers = new HandlerList();
-
-		private InventoryClickEvent previousEvent;
-		private Button button;
-		private GUI gui;
-		private boolean cancel;
-		
-		public ButtonClickEvent(InventoryClickEvent previousEvent, GUI clickedGUI, Button button) {
-			this.previousEvent = previousEvent;
-			this.button = button;
-			this.gui = clickedGUI;
-		}
-		
-		public static HandlerList getHandlerList() {
-			return handlers;
-		}
-		
-		@Override
-		public HandlerList getHandlers() {
-			return getHandlerList();
-		}
-		
-		/**
-		 * Returns the result if the Event is Cancelled.
-		 * @return if the Result is <b>true</b>,
-		 * the Event is cancelled and will not execute the {@link Button#click(ButtonClickEvent)}-Method.
-		 * If the result is <b>false</b> the Event is not cancelled and will call this method.
-		 * 
-		 */
-		@Override
-		public boolean isCancelled() {
-			return cancel;
-		}
-		
-		/**
-		 * Changes the Cancel-Attribute. The attribute will get the same value as the Parameter.
-		 * @param arg0 The new Cancel-Attribute as boolean. If the boolean is false the Event is not cancelled, else it's cancelled and
-		 * will not call {@link Button#click(ButtonClickEvent)}-Method.
-		 */
-		@Override
-		public void setCancelled(boolean arg0) {
-			cancel = arg0;
-		}
-
-		/**
-		 * Get the InventoryClickEvent. 
-		 * 
-		 * Every ButtonClickEvent is triggered directed after the InventoryClickEvent. 
-		 * The Setter-Methods has no influence to the original Method.
-		 * The Getter-Methods might be useful for future plans.
-		 * 
-		 * @return the original InventoryClickEvent
-		 */
-		public InventoryClickEvent getInventoryClickEvent() {
-			return previousEvent;
-		}
-		
-		/**
-		 * Get the clicked Button.
-		 * 
-		 * It's important to get the Button as ButtonEvent.
-		 * The Button contains the Design and the Function of future tasks.
-		 * @return the clicked Button
-		 */
-		public Button getButton() {
-			return button;
-		}
-		
-		/**
-		 * This method returns the current gui object
-		 * @return the current gui.
-		 */
-		public GUI getGUI() {
-			return gui;
-		}
-		
-		/**
-		 * Get the player who clicked on the button.
-		 * @return the player who clicked on the button
-		 */
-		public HumanEntity getWhoClicked() {
-			return previousEvent.getWhoClicked();
-		}
-		
+	private Object getContainerType() {
+		// get Field of current size
+		return Reflections.getField(containersClass, String.format("GENERIC_9X%d", design.length / 9L));
 	}
 	
 	/**
-	 * This event will be triggered when a player close a gui interface
-	 * @author Timeout
-	 *
+	 * This method sets the close function of the gui. null deletes the close function
+	 * @param event the new closefunction or null
 	 */
-	public static class GUICloseEvent extends Event {
-		
-		private static final HandlerList handlers = new HandlerList();
-
-		private GUI gui;
-		private InventoryCloseEvent closeEvent;
-		private boolean destroyGUI;
-		private boolean cancelCloseFunction;
-		
-		/**
-		 * This constructor creates a new event
-		 * @param closedGUI the gui which is closed by the player
-		 * @param closeEvent the inventorycloseevent itself
-		 */
-		public GUICloseEvent(@Nonnull GUI closedGUI, @Nonnull InventoryCloseEvent closeEvent) {
-			this.gui = closedGUI;
-			this.closeEvent = closeEvent;
-		}
-		
-		public static HandlerList getHandlerList() {
-			return handlers;
-		}
-		
-		@Override
-		public HandlerList getHandlers() {
-			return getHandlerList();
-		}
-		
-		/**
-		 * This Method get the player who close the gui
-		 * @return the player who close the gui
-		 */
-		public HumanEntity getPlayer() {
-			return closeEvent.getPlayer();
-		}
-		
-		/**
-		 * This method returns the inventory close event
-		 * @return the inventory close event
-		 */
-		public InventoryCloseEvent getInventoryCloseEvent() {
-			return closeEvent;
-		}
-		
-		/**
-		 * This method checks, if the gui is going to be destroyed
-		 * @return if the gui is going to be destroyed
-		 */
-		public boolean isDestroyed() {
-			return destroyGUI;
-		}
-		
-		/**
-		 * This method changes the destruction behaviour of the gui. 
-		 * This method decides if the gui will be destroyed or not. 
-		 * By default, this gui will not be destroyed.
-		 * @param arg0 if the gui will be destroyed or not
-		 */
-		public void setDestroyed(boolean arg0) {
-			this.destroyGUI = arg0;
-		}
-		
-		/**
-		 * This method checks, if the close function of the gui will be executed
-		 * @return if the close function is executed
-		 */
-		public boolean isFunctionCancelled() {
-			return cancelCloseFunction;
-		}
-		
-		/**
-		 * This method changes the execution of the function
-		 * This method decides if the close function will be executed or not
-		 * @param arg0 if the close function will be executed
-		 */
-		public void setFunctionCancelled(boolean arg0) {
-			this.cancelCloseFunction = arg0;
-		}
-		
-		/**
-		 * This method returns the closed GUI
-		 * @return the closed GUI
-		 */
-		public GUI getClosedGUI() {
-			return gui;
-		}
+	public void setCloseFunction(Consumer<GUICloseEvent> event) {
+		this.closeAction = event;
 	}
 }

@@ -9,53 +9,66 @@ import java.nio.file.Paths;
 import java.util.logging.Level;
 
 import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
 
-public class ConfigCreator {
+public final class ConfigCreator {
 	
 	private static final ColoredLogger logger = new ColoredLogger("&8[&aLibs&8] ");
 	
-	private File dataFolder;
-	private String assetsDirectory;
+	private ConfigCreator() {
+		/* UTILS DON'T REQUIRE A CONSTRUCTOR */
+	}
 	
-	public ConfigCreator(File datafolder, String assetsDirectory) {
-		this.assetsDirectory = assetsDirectory;
-		this.dataFolder = datafolder;
+	public static UTFConfig loadUTFConfig(String internalConfigPath, File out) throws IOException {
+		return new UTFConfig(loadRessource(internalConfigPath, out));
+	}
+	
+	public static JsonConfig loadJsonConfig(String configPath, File out) throws IOException {
+		return new JsonConfig(loadRessource(configPath, out));
 	}
 	
 	/**
-	 * This file creates a written configuration in your plugin folder. Subfolders must be splitted with "/" like folder/config.yml.
-	 * Don't forget dataendings. Also check, if the path of your internal configuration is similar to the path of the pluginfolder.
-	 * @param configPath the path of your configuration. Must be similar to their real location. 
-	 * @return the File itself
-	 * @throws IOException if the system cannot create the file due input-output errors
+	 * 
+	 * @param internalConfigPath the path of the config inside of the jar
+	 * @param out the file where all values should be written
+	 * @return the file itself
+	 * @throws IOException if the configuration could not be copied from jar to its destination
 	 */
-	public File loadRessource(String configPath) throws IOException {
-		// call loadFile()
-		File configuration = loadFile(configPath);
-		// If file is empty
-		if(configuration.length() == 0L) {
-			// copy files into subfolder
-			try(InputStream in = this.getClass().getClassLoader().getResourceAsStream(Paths.get(assetsDirectory, configPath).toString());
-					OutputStream out = new FileOutputStream(configuration)) {
-				ByteStreams.copy(in, out);
+	public static File loadRessource(String internalConfigPath, File out) throws IOException {
+		// create file in datafolder
+		File dataFile = loadFile(out);
+		String internalPath = Paths.get(internalConfigPath).toString();
+		
+		// copy from internal config if file is empty
+		if(dataFile.length() == 0L) {
+			try(InputStream in = ConfigCreator.class.getResourceAsStream(internalPath);
+					OutputStream output = new FileOutputStream(dataFile)) {
+				if(in != null) {
+					ByteStreams.copy(in, output);
+					logger.log(Level.INFO, String.format("&7Loaded File %s &asuccessfully", dataFile.getName()));
+				} else logger.log(Level.WARNING, 
+						String.format("&cUnable to copy data from internal file %s inside jar into file %s",
+								internalPath, dataFile.getPath()));
 			}
 		}
-		logger.log(Level.INFO, String.format("&7Loaded File %s &asuccessfully", configuration.getName()));
-		return configuration;
+		
+		return dataFile;
 	}
 	
 	/**
 	 * This method creates an empty file in your plugin folder. Subfolders must be splitted with "/" like folder/file.txt.
 	 * Don't forget dataendings
-	 * @param filePath the path or name of the file
+	 * @param out the path or name of the file
 	 * @return the file itself
 	 * @throws IOException if the system cannot create the file due input output errors
 	 */
-	private File loadFile(String filePath) throws IOException {
-		File configFile = Paths.get(dataFolder.getAbsolutePath(), filePath).toFile();
-		if(configFile.getParentFile().mkdirs() || configFile.createNewFile()) 
-			logger.log(Level.INFO, String.format("&7Created new file %s in datafolder", configFile.getName()));
+	private static File loadFile(File out) throws IOException {
+		// create Folder if not exists
+		Files.createParentDirs(out);
 		
-		return configFile;
+		if(out.createNewFile()) 
+			logger.log(Level.INFO, String.format("&7Created new file %s in datafolder", out.getName()));
+		
+		return out;
 	}
 }

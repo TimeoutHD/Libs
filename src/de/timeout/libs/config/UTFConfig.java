@@ -15,11 +15,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.craftbukkit.libs.org.apache.commons.io.IOUtils;
+import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.representer.Representer;
@@ -55,7 +56,7 @@ public class UTFConfig extends YamlConfiguration {
 			// load Config from file content
 			load(file);
 		} catch (IOException | InvalidConfigurationException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Could not load Configuration " + file.getName(), e);
+			Bukkit.getLogger().log(Level.SEVERE, e, () -> "Could not load Configuration " + file.getName());
 		}
 	}
 	
@@ -65,7 +66,7 @@ public class UTFConfig extends YamlConfiguration {
 	 * @throws IOException If the stream cannot be read
 	 */
 	public UTFConfig(InputStream stream) throws IOException {
-		this(IOUtils.toString(stream));
+		this(IOUtils.toString(stream, StandardCharsets.UTF_8));
 	}
 	
 	public UTFConfig(String source) {
@@ -102,7 +103,7 @@ public class UTFConfig extends YamlConfiguration {
 	 * @throws IllegalArgumentException if some attributes are null. Normally it does never come to this
 	 */
 	@Override
-	public String saveToString() {
+	public @NotNull String saveToString() {
 		// Load attributes with Reflection-Utils
 		DumperOptions yamlOptions = (DumperOptions) Reflections.getValue(optionField, this);
 		Representer yamlRepresenter = (Representer) Reflections.getValue(representerField, this);

@@ -1,6 +1,7 @@
 package de.timeout.libs.items;
 
 import java.lang.reflect.Field;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -8,24 +9,26 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.SkullType;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Skull;
+import org.bukkit.craftbukkit.libs.org.apache.commons.codec.binary.Base64;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 
+import de.timeout.libs.BukkitReflections;
 import de.timeout.libs.Reflections;
 import de.timeout.libs.profiles.GameProfileFetcher;
 import net.md_5.bungee.api.ChatColor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class represents a PlayerSkull as ItemStack. Use this class only outside Main-Thread
@@ -34,22 +37,22 @@ import net.md_5.bungee.api.ChatColor;
  */
 public class PlayerSkull extends ItemStack {
 	
-	private static final Class<?> craftmetaskullClass = Reflections.getCraftBukkitClass("inventory.CraftMetaSkull");
-	private static final Class<?> craftskullClass = Reflections.getCraftBukkitClass("block.CraftSkull");
+	private static final Class<?> craftmetaskullClass = BukkitReflections.getCraftBukkitClass("inventory.CraftMetaSkull");
+	private static final Class<?> craftskullClass = BukkitReflections.getCraftBukkitClass("block.CraftSkull");
 	
-	private static final Field metaProfileField = Reflections.getField(craftmetaskullClass, "profile");
-	private static final Field skullProfileField = Reflections.getField(craftskullClass, "profile");
+	private static final @NotNull Field metaProfileField = Objects.requireNotNull(Reflections.getField(craftmetaskullClass, "profile"));
+	private static final @NotNull Field skullProfileField = Objects.requireNotNull(Reflections.getField(craftskullClass, "profile"));
 	
 	private static final Base64 base64 = new Base64();
 	
-	public static final ItemStack SKELETON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 0);
-	public static final ItemStack WITHER_SKELETON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 1);
-	public static final ItemStack ZOMBIE = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 2);
-	public static final ItemStack CREEPER = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 4);
-	public static final ItemStack ENDERDRAGON = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 5);
-	public static final ItemStack STEVE = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 3);
+	public static final ItemStack SKELETON = new ItemStack(Material.SKELETON_SKULL);
+	public static final ItemStack WITHER_SKELETON = new ItemStack(Material.WITHER_SKELETON_SKULL);
+	public static final ItemStack ZOMBIE = new ItemStack(Material.ZOMBIE_HEAD);
+	public static final ItemStack CREEPER = new ItemStack(Material.CREEPER_HEAD);
+	public static final ItemStack ENDERDRAGON = new ItemStack(Material.DRAGON_HEAD);
+	public static final ItemStack STEVE = new ItemStack(Material.PLAYER_HEAD);
 	
-	private GameProfile profile;
+	private final GameProfile profile;
 	
 	/**
 	 * This Constructor creates a new Skull-ItemStack.
@@ -60,7 +63,9 @@ public class PlayerSkull extends ItemStack {
 	 * @throws TimeoutException if the connection timed out and no GameProfile was avaiable
 	 */
 	public PlayerSkull(String displayname, int amount, UUID uuid) throws InterruptedException, ExecutionException, TimeoutException {
-		super(ItemStackAPI.createItemStack(Material.SKULL_ITEM, amount > 0 ? amount : 1, (short) 3, ChatColor.translateAlternateColorCodes('&', displayname)));
+		super(new ItemStackBuilder(STEVE)
+				.setDisplayName(ChatColor.translateAlternateColorCodes('&', displayname))
+				.toItemStack());
 				
 		Future<GameProfile> request = overrideGameProfile(uuid);
 		// get Profile
@@ -70,7 +75,13 @@ public class PlayerSkull extends ItemStack {
 		Reflections.setField(metaProfileField, meta, profile);
 		setItemMeta(meta);
 	}
-	
+
+	@Override
+	public @NotNull ItemMeta getItemMeta() {
+		// It's always there, because the item is never null and no air
+		return Objects.requireNotNull(super.getItemMeta());
+	}
+
 	/**
 	 * This Constructor creates a new Skull-ItemStack
 	 * @param amount the amount of this itemstack
@@ -93,8 +104,8 @@ public class PlayerSkull extends ItemStack {
         // put values in profile
         profile.getProperties().put("textures", new Property("textures", new String(encodedData)));
         // create ItemStack and get ItemMeta
-        ItemStack skull = ItemStackAPI.createItemStack(Material.SKULL_ITEM, 1, (short) 3);
-        ItemMeta meta = skull.getItemMeta();
+        ItemStack skull = new ItemStackBuilder(STEVE).toItemStack();
+        ItemMeta meta = Objects.requireNotNull(skull.getItemMeta());
         // write Profile in ItemMeta
 		Reflections.setField(metaProfileField, meta, profile);
 		// set meta in skull
@@ -128,8 +139,8 @@ public class PlayerSkull extends ItemStack {
 	 * @param location the loation of the block
 	 * @return the block itself
 	 */
-	public Block toBlock(Location location) {
-		return this.toBlock(location.getWorld(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
+	public Block toBlock(@NotNull Location location) {
+		return this.toBlock(Objects.requireNotNull(location.getWorld()), location.getBlockX(), location.getBlockY(), location.getBlockZ());
 	}
 	
 	/**
@@ -144,11 +155,9 @@ public class PlayerSkull extends ItemStack {
 		// get Block
 		Block block = world.getBlockAt(x, y, z);
 		// set type to skull
-		block.setType(Material.SKULL);
+		block.setType(Material.PLAYER_HEAD);
 		// cast to Skull
 		Skull skull = (Skull) block.getState();
-		// set type to player skull
-		skull.setSkullType(SkullType.PLAYER);
 		// insert profile in Skull
 		Reflections.setField(skullProfileField, skull, profile);
 		// update Block

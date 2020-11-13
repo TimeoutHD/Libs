@@ -11,13 +11,19 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.jetbrains.annotations.NotNull;
 
 import com.google.common.cache.LoadingCache;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService;
 
+import de.timeout.libs.BukkitReflections;
+import de.timeout.libs.Players;
 import de.timeout.libs.Reflections;
 
 /**
@@ -28,7 +34,7 @@ import de.timeout.libs.Reflections;
  */
 public class GameProfileFetcher implements Supplier<GameProfile> {
 			
-	private static final Class<?> tileentityskullClass = Reflections.getNMSClass("TileEntitySkull");
+	private static final Class<?> tileentityskullClass = BukkitReflections.getNMSClass("TileEntitySkull");
 	
 	@SuppressWarnings("unchecked")
 	private static final LoadingCache<String, GameProfile> skinCache = (LoadingCache<String, GameProfile>) Reflections.getValue(Reflections.getField(tileentityskullClass, "skinCache"), tileentityskullClass);
@@ -36,7 +42,10 @@ public class GameProfileFetcher implements Supplier<GameProfile> {
 	
 	private OfflinePlayer owner;
 	
-	public GameProfileFetcher(UUID owner) {
+	public GameProfileFetcher(@NotNull UUID owner) {
+		// Validate
+		Validate.notNull(owner, "Owner cannot be null");
+		
 		this.owner = Bukkit.getServer().getOfflinePlayer(owner);
 	}
 
@@ -65,7 +74,7 @@ public class GameProfileFetcher implements Supplier<GameProfile> {
 					Bukkit.getLogger().log(Level.WARNING, "Unable to get GameProfile of " + owner.getName() + ". Connection timed out...");
 				}
 			// get GameProfile from owner
-			} else localProfile = Reflections.getGameProfile(owner.getPlayer());
+			} else localProfile = Players.getGameProfile(owner.getPlayer());
 		}
 		// return profile
 		return localProfile;
@@ -75,6 +84,7 @@ public class GameProfileFetcher implements Supplier<GameProfile> {
 	 * This Method returns the GameProfile from the cache. If the value is not in the cache it will return null
 	 * @return the value or null if it does not exist.
 	 */
+	@Nullable
 	private GameProfile lookUpGameProfileFromCache() {
 		// create current local copy of cache
 		Map<String, GameProfile> profile = new HashMap<>(skinCache.asMap());

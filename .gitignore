@@ -2,6 +2,7 @@
 /doc/
 /target/
 /.settings/
+/.idea/
 .classpath
 .project
 org.eclipse.jdt.core.prefs
