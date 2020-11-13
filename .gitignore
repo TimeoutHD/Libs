@@ -7,3 +7,5 @@
 org.eclipse.jdt.core.prefs
 /.settings/.gitignore
 /.settings/org.eclipse.core.resources.prefs
+/.idea
+Libs.iml
